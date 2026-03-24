@@ -980,7 +980,7 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                     <div className="flex items-center gap-2">
                       {data?.lastUpdated && (
                         <span className="text-xs text-slate-500">
-                          Ultimo aggiornamento: {new Date(data.lastUpdated).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {t.lastUpdated}: {new Date(data.lastUpdated).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       )}
                       <button
