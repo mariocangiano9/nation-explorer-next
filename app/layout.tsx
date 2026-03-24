@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     siteName: 'Nation Explorer',
     type: 'website',
     locale: 'en_US',
-    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'Nation Explorer' }],
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'Nation Explorer' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Nation Explorer',
     description: 'Interactive geopolitical intelligence platform. Explore in-depth profiles of every country.',
-    images: ['/og-image.svg'],
+    images: ['/og'],
   },
 };
 
