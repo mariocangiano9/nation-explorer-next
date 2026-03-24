@@ -227,23 +227,7 @@ GENERAL RULES:
 }`;
 }
 
-const IMPORTANT_COUNTRIES = new Set([
-  "United States", "China", "Russia", "Germany", "France", "United Kingdom",
-  "Japan", "India", "Brazil", "Italy", "Canada", "South Korea", "Australia",
-  "Spain", "Mexico", "Indonesia", "Turkey", "Saudi Arabia", "Netherlands",
-  "Switzerland", "Argentina", "Sweden", "Poland", "Belgium", "Norway",
-  "United Arab Emirates", "Israel", "Iran", "Ukraine", "Pakistan", "Egypt",
-  "South Africa", "Nigeria", "Thailand", "Malaysia", "Singapore", "Vietnam",
-  "Philippines", "Bangladesh", "Ethiopia", "Kenya", "Colombia", "Chile",
-  "Venezuela", "Iraq", "Syria", "Afghanistan", "North Korea", "Taiwan",
-  "Vatican City",
-]);
-
-function getModelForCountry(countryName: string): string {
-  return IMPORTANT_COUNTRIES.has(countryName)
-    ? "claude-sonnet-4-6"
-    : "claude-haiku-4-5-20251001";
-}
+const model = "claude-haiku-4-5-20251001";
 
 function parseJsonResponse(text: string): unknown {
   try {
@@ -315,7 +299,7 @@ serve(async (req: Request) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: getModelForCountry(countryName),
+        model,
         max_tokens: 16000,
         system: `You are an expert geopolitical and economic analyst. Reply ONLY with a valid JSON object, without additional text, comments, or markdown formatting. All text values must be in ${langName}.`,
         messages: [{ role: "user", content: buildPrompt(countryName, language) }],
