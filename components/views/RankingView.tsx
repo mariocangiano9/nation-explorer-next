@@ -7,9 +7,9 @@ import {
   Maximize, BookOpen, Newspaper, Fingerprint,
   Zap, HeartPulse, Smile, Upload, Download, UserCircle
 } from 'lucide-react';
-import { getRankingFromCache } from '../services/rankingsService';
-import { getRankingFromCountryCache } from '../services/rankingsFromCache';
-import { getFlagEmoji, cn } from '../utils';
+import { getRankingFromCache } from '../../services/rankingsService';
+import { getRankingFromCountryCache } from '../../services/rankingsFromCache';
+import { getFlagEmoji, cn } from '../../utils';
 
 interface RankingItem {
   name: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Globe2, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '../services/authService';
+import { supabase } from '../../services/authService';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
