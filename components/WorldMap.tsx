@@ -148,7 +148,7 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, l
 
   const activeStyle = mapStyle === 'satellite' ? SATELLITE_STYLE : DARK_STYLE;
 
-  const flatProjectionConfig = useMemo(() => ({ scale: 153, center: [0, 0] as [number, number] }), []);
+  const flatProjectionConfig = useMemo(() => ({ scale: 153, center: [0, -10] as [number, number] }), []);
   const flatTranslateExtent = useMemo(() => [[-800, -400], [1600, 800]] as [[number, number], [number, number]], []);
   const globeProjectionConfig = useMemo(() => ({ rotate: rotation, scale: 260 }), [rotation]);
 
