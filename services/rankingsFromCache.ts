@@ -41,7 +41,7 @@ function parsePerCapita(raw: string): number {
 }
 
 interface IndicatorConfig {
-  extract: (data: any) => string;
+  extract: (data: any) => string | undefined;
   parse: (value: string, data: any) => number;
   unit: string;
 }
