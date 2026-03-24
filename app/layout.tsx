@@ -27,6 +27,10 @@ export const metadata: Metadata = {
     description: 'Interactive geopolitical intelligence platform. Explore in-depth profiles of every country.',
     images: ['/og'],
   },
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
