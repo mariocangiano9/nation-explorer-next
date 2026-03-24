@@ -64,11 +64,17 @@ export interface CountryData {
   // Economy
   economy: {
     gdpNominal: string;
+    gdpNominalNumeric?: number;
     gdpPerCapita: string;
+    gdpPerCapitaNumeric?: number;
     growth: string;
+    growthNumeric?: number;
     inflation: string;
+    inflationNumeric?: number;
     unemployment: string;
+    unemploymentNumeric?: number;
     debtToGdp: string;
+    debtToGdpNumeric?: number;
     rating: string;
     giniIndex: string;
     fdi: string;
@@ -78,7 +84,9 @@ export interface CountryData {
   // Trade
   trade: {
     imports: string;
+    importsNumeric?: number;
     exports: string;
+    exportsNumeric?: number;
     balance: string;
     partners: { name: string; code: string; share: number }[];
     importSectors: { name: string; share: number }[];

@@ -49,12 +49,12 @@ interface IndicatorConfig {
 const INDICATOR_MAP: Record<string, IndicatorConfig> = {
   gdp: {
     extract: (d) => d?.economy?.gdpNominal,
-    parse: (v) => parseMonetary(v),
+    parse: (_v, d) => d?.economy?.gdpNominalNumeric ?? parseMonetary(_v),
     unit: 'USD (B)',
   },
   gdp_capita: {
     extract: (d) => d?.economy?.gdpPerCapita,
-    parse: (v) => parsePerCapita(v),
+    parse: (_v, d) => d?.economy?.gdpPerCapitaNumeric ?? parsePerCapita(_v),
     unit: 'USD',
   },
   population: {
@@ -69,27 +69,27 @@ const INDICATOR_MAP: Record<string, IndicatorConfig> = {
   },
   unemployment: {
     extract: (d) => d?.economy?.unemployment,
-    parse: (v) => parsePercentage(v),
+    parse: (_v, d) => d?.economy?.unemploymentNumeric ?? parsePercentage(_v),
     unit: '%',
   },
   inflation: {
     extract: (d) => d?.economy?.inflation,
-    parse: (v) => parsePercentage(v),
+    parse: (_v, d) => d?.economy?.inflationNumeric ?? parsePercentage(_v),
     unit: '%',
   },
   debt: {
     extract: (d) => d?.economy?.debtToGdp,
-    parse: (v) => parsePercentage(v),
+    parse: (_v, d) => d?.economy?.debtToGdpNumeric ?? parsePercentage(_v),
     unit: '% GDP',
   },
   exports: {
     extract: (d) => d?.trade?.exports,
-    parse: (v) => parseMonetary(v),
+    parse: (_v, d) => d?.trade?.exportsNumeric ?? parseMonetary(_v),
     unit: 'USD (B)',
   },
   imports: {
     extract: (d) => d?.trade?.imports,
-    parse: (v) => parseMonetary(v),
+    parse: (_v, d) => d?.trade?.importsNumeric ?? parseMonetary(_v),
     unit: 'USD (B)',
   },
   democracy: {

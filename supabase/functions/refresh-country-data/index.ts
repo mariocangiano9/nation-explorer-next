@@ -1,85 +1,30 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { getFromSupabaseCache, saveToSupabaseCache } from './supabaseService.js';
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CACHE_VERSION = 'v1';
-const CACHE_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const CACHE_PREFIX = 'nation_explorer_';
-const APP_CACHE_VERSION = '2.0';
-const APP_CACHE_VERSION_KEY = 'nation_explorer_cache_version';
+const LANG_NAMES: Record<string, string> = {
+  it: "Italian",
+  en: "English",
+  fr: "French",
+  es: "Spanish",
+  de: "German",
+};
 
-// On module load: clear all country cache entries if version changed
-(function clearStaleCache() {
-  try {
-    const stored = localStorage.getItem(APP_CACHE_VERSION_KEY);
-    if (stored !== APP_CACHE_VERSION) {
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(CACHE_PREFIX)) keysToRemove.push(key);
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-      localStorage.setItem(APP_CACHE_VERSION_KEY, APP_CACHE_VERSION);
-    }
-  } catch {
-    // ignore — localStorage may be unavailable
-  }
-})();
+const LANG_LOCALES: Record<string, string> = {
+  it: "it-IT",
+  en: "en-US",
+  fr: "fr-FR",
+  es: "es-ES",
+  de: "de-DE",
+};
 
-const LANG_NAMES = { it: 'Italian', en: 'English', fr: 'French', es: 'Spanish', de: 'German' };
-const LANG_LOCALES = { it: 'it-IT', en: 'en-US', fr: 'fr-FR', es: 'es-ES', de: 'de-DE' };
+function buildPrompt(countryName: string, language: string): string {
+  const langName = LANG_NAMES[language] || "English";
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
-function getCacheKey(countryName, language) {
-  return `${CACHE_PREFIX}${CACHE_VERSION}_${language}_${encodeURIComponent(countryName)}`;
-}
-
-/**
- * Returns cached country data if fresh (< 30 days old), otherwise null.
- */
-export function checkCountryCache(countryName, language = 'it') {
-  try {
-    const raw = localStorage.getItem(getCacheKey(countryName, language));
-    if (!raw) return null;
-    const { data, timestamp } = JSON.parse(raw);
-    if (Date.now() - timestamp < CACHE_DURATION_MS) {
-      return data;
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return null;
-}
-
-function saveToCache(countryName, data, language) {
-  try {
-    localStorage.setItem(
-      getCacheKey(countryName, language),
-      JSON.stringify({ data, timestamp: Date.now() })
-    );
-  } catch {
-    // ignore storage quota errors
-  }
-}
-
-function parseJsonResponse(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Try to extract JSON from a markdown code block
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (match) {
-      try {
-        return JSON.parse(match[1].trim());
-      } catch {
-        // fall through
-      }
-    }
-    return null;
-  }
-}
-
-function buildPrompt(countryName, language) {
-  const langName = LANG_NAMES[language] || 'English';
-  const currentDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   return `Generate a complete country profile for "${countryName}" in ${langName}. Return ONLY a valid JSON object matching the schema below exactly. Current date: ${currentDate}.
 
 GENERAL RULES:
@@ -260,11 +205,11 @@ GENERAL RULES:
       "reserve": "reserve personnel formatted (e.g. 42,000)"
     },
     "equipment": {
-      "tanks": "DIGITS ONLY — total tanks and armoured vehicles as a formatted integer (e.g. 2,100). No words, no model names, no parentheses.",
-      "aircraft": "DIGITS ONLY — total military aircraft as a formatted integer (e.g. 310). No words, no model names, no parentheses.",
-      "ships": "DIGITS ONLY — total principal naval vessels as a formatted integer (e.g. 90). No words, no vessel types, no parentheses."
+      "tanks": "total tanks and armoured vehicles formatted",
+      "aircraft": "total military aircraft (fighters, bombers, helicopters) formatted",
+      "ships": "total principal naval vessels formatted"
     },
-    "nuclearWeapons": "DIGITS ONLY or the word None — formatted integer warhead count (e.g. 5,977) or exactly 'None'. No parentheses, no qualifiers.",
+    "nuclearWeapons": "number of nuclear warheads or 'None'",
     "militaryTech": "short phrase: key tech capabilities (max 6 words)",
     "missilesAndDefense": "short phrase: missile systems (max 6 words)",
     "vehiclesAndInfrastructure": "short phrase: vehicle fleet type (max 6 words)",
@@ -282,57 +227,160 @@ GENERAL RULES:
 }`;
 }
 
-/**
- * Fetches complete country data from Claude API (claude-sonnet-4-6).
- * Checks localStorage cache first (30-day TTL). On cache miss, calls the API,
- * persists the result to localStorage, and returns it.
- *
- * @param {string} countryName - The country name to fetch data for.
- * @returns {Promise<object>} The country data object matching CountryData schema.
- */
-export async function getCountryData(countryName, language = 'it') {
-  // Layer 1: localStorage (sync, instant)
-  const localCached = checkCountryCache(countryName, language);
-  if (localCached) return localCached;
+const IMPORTANT_COUNTRIES = new Set([
+  "United States", "China", "Russia", "Germany", "France", "United Kingdom",
+  "Japan", "India", "Brazil", "Italy", "Canada", "South Korea", "Australia",
+  "Spain", "Mexico", "Indonesia", "Turkey", "Saudi Arabia", "Netherlands",
+  "Switzerland", "Argentina", "Sweden", "Poland", "Belgium", "Norway",
+  "United Arab Emirates", "Israel", "Iran", "Ukraine", "Pakistan", "Egypt",
+  "South Africa", "Nigeria", "Thailand", "Malaysia", "Singapore", "Vietnam",
+  "Philippines", "Bangladesh", "Ethiopia", "Kenya", "Colombia", "Chile",
+  "Venezuela", "Iraq", "Syria", "Afghanistan", "North Korea", "Taiwan",
+  "Vatican City",
+]);
 
-  // Layer 2: Supabase shared cache (async, cross-device)
-  const supabaseCached = await getFromSupabaseCache(countryName, language);
-  if (supabaseCached) {
-    saveToCache(countryName, supabaseCached, language);
-    return supabaseCached;
+function getModelForCountry(countryName: string): string {
+  return IMPORTANT_COUNTRIES.has(countryName)
+    ? "claude-sonnet-4-6"
+    : "claude-haiku-4-5-20251001";
+}
+
+function parseJsonResponse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (match) {
+      try {
+        return JSON.parse(match[1].trim());
+      } catch {
+        // fall through
+      }
+    }
+    return null;
+  }
+}
+
+serve(async (req: Request) => {
+  // Only accept POST
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  // Layer 3: Claude API
-  const langName = LANG_NAMES[language] || 'English';
+  // Auth: must be called with the service role key
+  const authHeader = req.headers.get("Authorization");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  const client = new Anthropic({
-    apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-    dangerouslyAllowBrowser: true,
-  });
+  let countryName: string;
+  let language: string;
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 16000,
-    system: `You are an expert geopolitical and economic analyst. Reply ONLY with a valid JSON object, without additional text, comments, or markdown formatting. All text values must be in ${langName}.`,
-    messages: [
-      {
-        role: 'user',
-        content: buildPrompt(countryName, language),
+  try {
+    const body = await req.json();
+    countryName = body.countryName;
+    language = body.language;
+    if (!countryName || !language) throw new Error("Missing fields");
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Body must contain countryName and language" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!anthropicKey) {
+    return new Response(
+      JSON.stringify({ error: "ANTHROPIC_API_KEY secret not set" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // Call Claude API
+  const langName = LANG_NAMES[language] || "English";
+  let claudeResponse: Response;
+  try {
+    claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
-    ],
-  });
+      body: JSON.stringify({
+        model: getModelForCountry(countryName),
+        max_tokens: 16000,
+        system: `You are an expert geopolitical and economic analyst. Reply ONLY with a valid JSON object, without additional text, comments, or markdown formatting. All text values must be in ${langName}.`,
+        messages: [{ role: "user", content: buildPrompt(countryName, language) }],
+      }),
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: "Claude API request failed", detail: String(err) }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
-  const textBlock = response.content.find((b) => b.type === 'text');
-  const parsed = parseJsonResponse(textBlock?.text || '{}');
+  if (!claudeResponse.ok) {
+    const errText = await claudeResponse.text();
+    return new Response(
+      JSON.stringify({ error: "Claude API error", detail: errText }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const claudeData = await claudeResponse.json();
+  const textBlock = claudeData.content?.find(
+    (b: { type: string }) => b.type === "text",
+  );
+  const parsed = parseJsonResponse(textBlock?.text || "{}");
+
+  if (!parsed) {
+    return new Response(
+      JSON.stringify({ error: "Failed to parse Claude response as JSON" }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   const result = {
-    ...(parsed || {}),
-    lastUpdated: new Date().toLocaleString(LANG_LOCALES[language] || 'en-US'),
+    ...(parsed as Record<string, unknown>),
+    lastUpdated: new Date().toLocaleString(LANG_LOCALES[language] || "en-US"),
   };
 
-  // Save to both Supabase and localStorage
-  await saveToSupabaseCache(countryName, language, result);
-  saveToCache(countryName, result, language);
+  // Save to Supabase country_cache
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    serviceRoleKey ?? "",
+  );
 
-  return result;
-}
+  const { error: upsertError } = await supabase
+    .from("country_cache")
+    .upsert(
+      {
+        country_code: countryName,
+        language,
+        data: result,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "country_code,language" },
+    );
+
+  if (upsertError) {
+    return new Response(
+      JSON.stringify({ error: "Supabase upsert failed", detail: upsertError.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, countryName, language }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+});
