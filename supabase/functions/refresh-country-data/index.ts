@@ -227,7 +227,12 @@ GENERAL RULES:
 }`;
 }
 
-const model = "claude-haiku-4-5-20251001";
+const importantCountries = [
+  "United States", "China", "Russia", "Germany", "France", "United Kingdom",
+  "Japan", "India", "Brazil", "Italy", "Canada", "South Korea", "Australia",
+  "Spain", "Mexico", "Turkey", "Saudi Arabia", "Israel", "Iran", "Ukraine",
+  "North Korea", "Taiwan", "Vatican City", "Switzerland", "Netherlands",
+];
 
 function parseJsonResponse(text: string): unknown {
   try {
@@ -289,6 +294,7 @@ serve(async (req: Request) => {
 
   // Call Claude API
   const langName = LANG_NAMES[language] || "English";
+  const model = importantCountries.includes(countryName) ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
   let claudeResponse: Response;
   try {
     claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {

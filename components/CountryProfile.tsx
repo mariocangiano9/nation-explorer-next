@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, Globe, Landmark, TrendingUp, Users, Shield, Zap, 
-  Briefcase, Info, ChevronRight, BarChart3, HeartPulse, 
+import {
+  X, Globe, Landmark, TrendingUp, Users, Shield, Zap,
+  Briefcase, Info, ChevronRight, BarChart3, HeartPulse,
   Smile, BookOpen, Activity, Clock, Phone, Map, Crosshair, User, Compass,
   Sword, Target, Cpu, Anchor, Plane, Truck, ShieldAlert,
-  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2
+  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -13,6 +13,9 @@ import {
 } from 'recharts';
 import { CountryData } from '../types';
 import { cn, getFlagEmoji } from '../utils';
+import { useAuth } from '../hooks/useAuth';
+import { getCountryData } from '../services/claudeDataService.js';
+import { saveToSupabaseCache } from '../services/supabaseService.js';
 
 interface CountryProfileProps {
   countryName: string;
@@ -142,6 +145,10 @@ const translations = {
     noRivals: "Nessun rivale principale",
     noEnergyPolicies: "Politiche energetiche non disponibili",
     noMissions: "Missioni internazionali non disponibili",
+    refreshData: "Aggiorna dati",
+    refreshing: "Aggiornamento...",
+    recentlyRefreshed: "Aggiornato di recente",
+    refreshSuccess: "Dati aggiornati!",
     definitions: {
       democracy: "Misura lo stato della democrazia basandosi su processo elettorale, libertà civili e partecipazione politica.",
       press: "Valuta il grado di libertà di cui godono giornalisti e media, e gli sforzi delle autorità per rispettarla.",
@@ -314,6 +321,10 @@ const translations = {
     noRivals: "No major rivals",
     noEnergyPolicies: "Energy policies not available",
     noMissions: "International missions not available",
+    refreshData: "Refresh data",
+    refreshing: "Refreshing...",
+    recentlyRefreshed: "Recently refreshed",
+    refreshSuccess: "Data updated!",
     definitions: {
       democracy: "Measures the state of democracy based on electoral process, civil liberties, and political participation.",
       press: "Assesses the degree of freedom enjoyed by journalists and media, and the efforts of authorities to respect it.",
@@ -428,6 +439,10 @@ const translations = {
     noAllies: "Aucun allié principal", noRivals: "Aucun rival principal",
     noEnergyPolicies: "Politiques énergétiques non disponibles",
     noMissions: "Missions internationales non disponibles",
+    refreshData: "Actualiser les données",
+    refreshing: "Actualisation...",
+    recentlyRefreshed: "Actualisé récemment",
+    refreshSuccess: "Données actualisées !",
     definitions: {
       democracy: "Mesure l'état de la démocratie en fonction du processus électoral, des libertés civiles et de la participation politique.",
       press: "Évalue le degré de liberté dont jouissent les journalistes et les médias.",
@@ -542,6 +557,10 @@ const translations = {
     noAllies: "Ningún aliado principal", noRivals: "Ningún rival principal",
     noEnergyPolicies: "Políticas energéticas no disponibles",
     noMissions: "Misiones internacionales no disponibles",
+    refreshData: "Actualizar datos",
+    refreshing: "Actualizando...",
+    recentlyRefreshed: "Actualizado recientemente",
+    refreshSuccess: "Datos actualizados!",
     definitions: {
       democracy: "Mide el estado de la democracia en función del proceso electoral, las libertades civiles y la participación política.",
       press: "Evalúa el grado de libertad del que gozan periodistas y medios de comunicación.",
@@ -656,6 +675,10 @@ const translations = {
     noAllies: "Keine wichtigen Verbündeten", noRivals: "Keine wichtigen Rivalen",
     noEnergyPolicies: "Energiepolitik nicht verfügbar",
     noMissions: "Internationale Missionen nicht verfügbar",
+    refreshData: "Daten aktualisieren",
+    refreshing: "Aktualisierung...",
+    recentlyRefreshed: "Kürzlich aktualisiert",
+    refreshSuccess: "Daten aktualisiert!",
     definitions: {
       democracy: "Misst den Zustand der Demokratie anhand von Wahlprozess, bürgerlichen Freiheiten und politischer Teilhabe.",
       press: "Bewertet den Grad der Freiheit, den Journalisten und Medien genießen.",
@@ -797,12 +820,62 @@ const Skeleton = ({ className }: { className?: string }) => (
   <div className={cn("animate-pulse bg-slate-800 rounded-lg", className)} />
 );
 
-export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data, loading, error, onClose, language }) => {
+export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data: initialData, loading, error, onClose, language }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [leaderImages, setLeaderImages] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState<{ [key: string]: boolean }>({});
+  const [refreshedData, setRefreshedData] = useState<CountryData | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshSuccess, setRefreshSuccess] = useState(false);
 
+  const data = refreshedData || initialData;
+
+  const { user } = useAuth();
   const t = translations[language];
+
+  const REFRESH_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours
+  const getRefreshKey = () => `ne_refresh_${countryName}_${language}`;
+
+  const isRecentlyRefreshed = useCallback(() => {
+    try {
+      const ts = localStorage.getItem(getRefreshKey());
+      if (!ts) return false;
+      return Date.now() - Number(ts) < REFRESH_COOLDOWN;
+    } catch {
+      return false;
+    }
+  }, [countryName, language]);
+
+  const [cooldown, setCooldown] = useState(isRecentlyRefreshed);
+
+  useEffect(() => {
+    setCooldown(isRecentlyRefreshed());
+    setRefreshedData(null);
+  }, [countryName, language, isRecentlyRefreshed]);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing || cooldown) return;
+    setRefreshing(true);
+    try {
+      // Clear localStorage cache to force API call
+      const cacheKey = `nation_explorer_v1_${language}_${encodeURIComponent(countryName)}`;
+      localStorage.removeItem(cacheKey);
+
+      const newData = await getCountryData(countryName, language);
+      if (newData) {
+        setRefreshedData(newData as CountryData);
+        await saveToSupabaseCache(countryName, language, newData);
+        localStorage.setItem(getRefreshKey(), String(Date.now()));
+        setCooldown(true);
+        setRefreshSuccess(true);
+        setTimeout(() => setRefreshSuccess(false), 3000);
+      }
+    } catch {
+      // refresh failed silently
+    } finally {
+      setRefreshing(false);
+    }
+  }, [countryName, language, refreshing, cooldown]);
 
   useEffect(() => {
     if (data && activeTab === 'politics' && data.leadership) {
@@ -889,11 +962,37 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
               </div>
               {data && (
                 <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Live Intelligence</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Live Intelligence</span>
+                    </div>
+                    {user && (
+                      <button
+                        onClick={handleRefresh}
+                        disabled={refreshing || cooldown}
+                        title={refreshing ? t.refreshing : cooldown ? t.recentlyRefreshed : t.refreshData}
+                        className={cn(
+                          "p-2 rounded-full border transition-all",
+                          refreshing || cooldown
+                            ? "bg-slate-800/50 border-slate-700/50 text-slate-500 cursor-not-allowed"
+                            : "bg-slate-800 border-slate-700 text-slate-300 hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/10"
+                        )}
+                      >
+                        <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                      </button>
+                    )}
                   </div>
-
+                  {refreshSuccess && (
+                    <motion.span
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="text-[10px] font-bold text-emerald-400"
+                    >
+                      {t.refreshSuccess}
+                    </motion.span>
+                  )}
                 </div>
               )}
             </div>

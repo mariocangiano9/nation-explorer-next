@@ -251,7 +251,7 @@ export default function Page() {
                       >
                         <span className="text-xl leading-none">{getFlagEmoji(country.code)}</span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-slate-200 block">{country.name}</span>
+                          <span className="text-sm font-medium text-slate-200 block">{country.displayName || country.name}</span>
                           {(country.capital || country.population) && (
                             <span className="text-xs text-slate-500 block truncate">
                               {[
