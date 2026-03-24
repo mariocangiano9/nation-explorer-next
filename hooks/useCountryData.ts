@@ -50,6 +50,14 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
 
   const handleCountryClick = async (name: string, forcedLanguage?: 'it' | 'en' | 'fr' | 'es' | 'de') => {
     const lang = forcedLanguage || language;
+
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'country_view', {
+        country_name: name,
+        language: lang,
+      });
+    }
+
     const cached = checkCountryCache(name, lang) as (CountryData & { lastUpdated: string }) | null;
     if (cached) {
       setCountryData(cached);
