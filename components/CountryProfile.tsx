@@ -849,6 +849,8 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
 
   const [cooldown, setCooldown] = useState(isRecentlyRefreshed);
 
+  const canRefresh = useCallback(() => !cooldown, [cooldown]);
+
   useEffect(() => {
     setCooldown(isRecentlyRefreshed());
     setRefreshedData(null);
@@ -973,31 +975,26 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                       <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                       <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Live Intelligence</span>
                     </div>
-                    {user && (
+                  </div>
+                  {user && (
+                    <div className="flex items-center gap-2">
+                      {data?.lastUpdated && (
+                        <span className="text-xs text-slate-500">
+                          {data.lastUpdated}
+                        </span>
+                      )}
                       <button
                         onClick={handleRefresh}
-                        disabled={refreshing || cooldown}
-                        title={refreshing ? t.refreshing : cooldown ? t.recentlyRefreshed : t.refreshData}
-                        className={cn(
-                          "p-2 rounded-full border transition-all",
-                          refreshing || cooldown
-                            ? "bg-slate-800/50 border-slate-700/50 text-slate-500 cursor-not-allowed"
-                            : "bg-slate-800 border-slate-700 text-slate-300 hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/10"
-                        )}
+                        disabled={refreshing || !canRefresh()}
+                        title={canRefresh() ? t.refreshData : t.recentlyRefreshed}
+                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                       </button>
-                    )}
-                  </div>
-                  {refreshSuccess && (
-                    <motion.span
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-[10px] font-bold text-emerald-400"
-                    >
-                      {t.refreshSuccess}
-                    </motion.span>
+                      {refreshSuccess && (
+                        <span className="text-xs text-emerald-400">{t.refreshSuccess}</span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -2122,10 +2119,9 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                 )}
               </div>
               
-              {/* Footer with Last Updated */}
+              {/* Footer */}
               <div className="mt-12 pt-6 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500 uppercase tracking-widest">
                 <span>Nation Explorer Global Intelligence Unit</span>
-                <span>{t.lastUpdated}: {data.lastUpdated || 'N/A'}</span>
               </div>
             </div>
           )}
