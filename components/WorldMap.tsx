@@ -211,7 +211,7 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, l
               translateExtent={flatTranslateExtent}
             >
               <Geographies geography={geoUrl}>
-                {({ geographies }) =>
+                {({ geographies }: { geographies: any[] }) =>
                   geographies.map((geo, index) => (
                     <GeoPath
                       key={geo.id || geo.rjsKey || `geo-${index}`}
@@ -261,7 +261,7 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, l
               strokeWidth={0.4}
             />
             <Geographies geography={geoUrl}>
-              {({ geographies }) =>
+              {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo, index) => (
                   <GeoPath
                     key={geo.id || geo.rjsKey || `geo-${index}`}
