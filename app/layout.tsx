@@ -10,7 +10,21 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'Nation Explorer',
-  description: 'Interactive Geopolitical Intelligence Platform',
+  description: 'Interactive geopolitical intelligence platform. Explore in-depth profiles of every country — economy, defense, energy, politics and more.',
+  metadataBase: new URL('https://nationexplorer.com'),
+  openGraph: {
+    title: 'Nation Explorer',
+    description: 'Interactive geopolitical intelligence platform. Explore in-depth profiles of every country — economy, defense, energy, politics and more.',
+    url: 'https://nationexplorer.com',
+    siteName: 'Nation Explorer',
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nation Explorer',
+    description: 'Interactive geopolitical intelligence platform. Explore in-depth profiles of every country.',
+  },
 };
 
 export default function RootLayout({

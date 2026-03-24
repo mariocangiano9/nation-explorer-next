@@ -48,6 +48,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${data.name} — Geopolitical Profile | Nation Explorer`,
     description: data.overview,
+    openGraph: {
+      title: `${data.name} — Geopolitical Profile | Nation Explorer`,
+      description: data.overview,
+      url: `https://nationexplorer.com/country/${slug}`,
+      siteName: 'Nation Explorer',
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${data.name} — Geopolitical Profile | Nation Explorer`,
+      description: data.overview,
+    },
   };
 }
 
