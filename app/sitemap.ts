@@ -1,38 +1,27 @@
-import type { MetadataRoute } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { MetadataRoute } from 'next';
+import { countries } from '../store/countries';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-function nameToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-');
-}
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nationexplorer.com';
-
-  const { data, error } = await supabase
-    .from('country_cache')
-    .select('country_name, updated_at');
-
-  const countryEntries: MetadataRoute.Sitemap = (data && !error)
-    ? data.map((row: { country_name: string; updated_at: string }) => ({
-        url: `${baseUrl}/country/${nameToSlug(row.country_name)}`,
-        lastModified: new Date(row.updated_at),
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
-      }))
-    : [];
+export default function sitemap(): MetadataRoute.Sitemap {
+  const countryUrls = countries.map((country) => ({
+    url: `https://nationexplorer.com/country/${country.name.toLowerCase().replace(/\s+/g, '-')}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
 
   return [
     {
-      url: baseUrl,
+      url: 'https://nationexplorer.com',
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 1,
     },
-    ...countryEntries,
+    {
+      url: 'https://nationexplorer.com/ranking',
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    },
+    ...countryUrls,
   ];
 }
