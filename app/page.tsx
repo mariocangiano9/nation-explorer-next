@@ -246,7 +246,7 @@ export default function Page() {
                     {filteredCountries.map((country) => (
                       <button
                         key={country.code}
-                        onClick={() => handleCountryClickWithLimit(country.name)}
+                        onClick={() => handleCountryClickWithLimit(country.originalName || country.name)}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-left transition-colors border-b border-slate-800 last:border-0"
                       >
                         <span className="text-xl leading-none">{getFlagEmoji(country.code)}</span>

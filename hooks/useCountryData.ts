@@ -2,18 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { CountryData, BaseCountry } from '../types';
 import { getCountryData, checkCountryCache } from '../services/claudeDataService';
 import { fetchCountries, getCachedCountries, getStaticCountries } from '../services/countriesService';
-
-function getTranslatedName(englishName: string, language: string): string | null {
-  try {
-    const key = `nation_explorer_v1_${language}_${encodeURIComponent(englishName)}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const { data } = JSON.parse(raw);
-    return data?.name || null;
-  } catch {
-    return null;
-  }
-}
+import { countryNames } from '../store/countryNames';
 
 export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -37,15 +26,15 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
     const query = searchQuery.toLowerCase();
     return countries
       .filter(c => {
-        const translatedName = getTranslatedName(c.name, language);
-        return c.name.toLowerCase().includes(query) ||
-          (translatedName && translatedName.toLowerCase().includes(query));
+        const translatedName = countryNames[c.name]?.[language] || c.name;
+        return translatedName.toLowerCase().includes(query) || c.name.toLowerCase().includes(query);
       })
-      .map(c => {
-        const translatedName = getTranslatedName(c.name, language);
-        return { ...c, displayName: translatedName || c.name };
-      })
-      .slice(0, 5);
+      .slice(0, 5)
+      .map(c => ({
+        ...c,
+        displayName: countryNames[c.name]?.[language] || c.name,
+        originalName: c.name,
+      }));
   }, [searchQuery, countries, language]);
 
   const handleCountryClick = async (name: string, forcedLanguage?: 'it' | 'en' | 'fr' | 'es' | 'de') => {
