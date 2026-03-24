@@ -10,8 +10,11 @@ const nextConfig: NextConfig = {
     ],
   },
   transpilePackages: ['react-simple-maps'],
-  experimental: {
-    esmExternals: 'loose',
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
+    return config;
   },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
