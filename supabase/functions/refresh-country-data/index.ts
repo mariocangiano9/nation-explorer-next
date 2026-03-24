@@ -17,32 +17,31 @@ const LANG_LOCALES: Record<string, string> = {
   de: "de-DE",
 };
 
-function buildPrompt(countryName: string, language: string): string {
-  const langName = LANG_NAMES[language] || "English";
+function buildPrompt(countryName: string): string {
   const currentDate = new Date().toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  return `Generate a complete country profile for "${countryName}" in ${langName}. Return ONLY a valid JSON object matching the schema below exactly. Current date: ${currentDate}.
+  return `Generate a complete country profile for "${countryName}" in English. Return ONLY a valid JSON object matching the schema below exactly. Current date: ${currentDate}.
 
 GENERAL RULES:
 - All descriptive text must be a short phrase (max 8 words)
 - Main overview is the only exception (3-4 sentences)
 - For international organizations use ONLY acronyms (UN, NATO, G20, IMF, WTO, EU, BRICS, etc.) — never full names
-- All text values must be written in ${langName}
+- All text values must be written in English
 
 {
   "code": "ISO 3166-1 alpha-2 (e.g. IT)",
   "id": "ISO 3166-1 alpha-3 (e.g. ITA)",
-  "name": "common country name in ${langName}",
-  "officialName": "full official name in ${langName}",
+  "name": "common country name in English",
+  "officialName": "full official name in English",
   "flag": "national flag emoji",
   "capital": "capital city name",
-  "region": "geographic region in ${langName}",
-  "subregion": "subregion in ${langName}",
-  "continent": "continent in ${langName}",
+  "region": "geographic region in English",
+  "subregion": "subregion in English",
+  "continent": "continent in English",
   "population": integer (total population),
   "populationDensity": decimal (inhabitants per km²),
   "area": integer (total area in km²),
@@ -52,40 +51,40 @@ GENERAL RULES:
   "tld": ".xx",
   "callingCode": "+XX",
   "independenceDate": "independence date or N/A",
-  "motto": "national motto in ${langName} or N/A",
-  "governmentForm": "government form in ${langName} (e.g. Parliamentary Republic)",
-  "politicalSystem": "political system in ${langName} (e.g. Multiparty Representative Democracy)",
+  "motto": "national motto in English or N/A",
+  "governmentForm": "government form in English (e.g. Parliamentary Republic)",
+  "politicalSystem": "political system in English (e.g. Multiparty Representative Democracy)",
 
-  "summary": "short phrase: country identity in ${langName} (max 8 words)",
-  "overview": "3-4 sentences covering: current political situation, economic state, and main geopolitical dynamics in ${langName}. Max 4 sentences, no filler.",
+  "summary": "short phrase: country identity in English (max 8 words)",
+  "overview": "3-4 sentences covering: current political situation, economic state, and main geopolitical dynamics in English. Max 4 sentences, no filler.",
 
   "leadership": {
     "headOfState": {
       "name": "full name",
-      "title": "title in ${langName}",
+      "title": "title in English",
       "photo": "",
       "party": "party or movement",
       "termStart": "year term began (e.g. 2022)",
-      "bio": "short phrase: role in ${langName} (max 8 words)"
+      "bio": "short phrase: role in English (max 8 words)"
     },
     "headOfGovernment": {
       "name": "full name (same as headOfState if identical)",
-      "title": "title in ${langName}",
+      "title": "title in English",
       "photo": "",
       "party": "party or coalition",
       "termStart": "year term began",
-      "bio": "short phrase: role in ${langName} (max 8 words)"
+      "bio": "short phrase: role in English (max 8 words)"
     }
   },
 
   "internalPolitics": {
     "rulingParty": "ruling party or coalition",
     "opposition": "main opposition parties",
-    "stability": "short phrase: stability level in ${langName} (max 8 words)",
+    "stability": "short phrase: stability level in English (max 8 words)",
     "recentElections": "last major election: type, year, result",
     "nextElections": "next scheduled elections with approximate date",
-    "parliamentStructure": "1 sentence parliament description in ${langName}",
-    "politicalOrientation": "current government political orientation in ${langName}"
+    "parliamentStructure": "1 sentence parliament description in English",
+    "politicalOrientation": "current government political orientation in English"
   },
 
   "indicators": {
@@ -112,7 +111,7 @@ GENERAL RULES:
     "giniIndex": "Gini index (e.g. 35)",
     "fdi": "net annual FDI formatted",
     "sectors": [
-      { "name": "sector name in ${langName}", "share": percentage number, "description": "short phrase: sector role (max 6 words)" }
+      { "name": "sector name in English", "share": percentage number, "description": "short phrase: sector role (max 6 words)" }
     ]
   },
 
@@ -126,21 +125,21 @@ GENERAL RULES:
       { "name": "partner country name", "code": "XX", "share": percentage number }
     ],
     "importSectors": [
-      { "name": "import category in ${langName}", "share": percentage number }
+      { "name": "import category in English", "share": percentage number }
     ],
     "exportSectors": [
-      { "name": "export category in ${langName}", "share": percentage number }
+      { "name": "export category in English", "share": percentage number }
     ]
   },
 
   "geopolitics": {
-    "position": "1 sentence strategic geopolitical position in ${langName}",
+    "position": "1 sentence strategic geopolitical position in English",
     "allies": [{ "name": "ally country name", "code": "XX" }],
     "rivals": [{ "name": "rival country name", "code": "XX" }],
     "strategicImportance": "short phrase: strategic role (max 8 words)",
     "treaties": ["treaty or agreement name", "treaty 2"],
-    "disputes": ["brief territorial or political dispute in ${langName}", "dispute 2"],
-    "conflicts": ["brief active conflict or tension in ${langName}", "conflict 2"],
+    "disputes": ["brief territorial or political dispute in English", "dispute 2"],
+    "conflicts": ["brief active conflict or tension in English", "conflict 2"],
     "influence": "short phrase: sphere of influence (max 8 words)",
     "softPower": "short phrase: soft power strengths (max 8 words)"
   },
@@ -175,22 +174,22 @@ GENERAL RULES:
   },
 
   "swot": {
-    "strengths": ["strength 1 in ${langName}", "strength 2", "strength 3", "strength 4"],
-    "weaknesses": ["weakness 1 in ${langName}", "weakness 2", "weakness 3"],
-    "opportunities": ["opportunity 1 in ${langName}", "opportunity 2", "opportunity 3"],
-    "threats": ["threat 1 in ${langName}", "threat 2", "threat 3"]
+    "strengths": ["strength 1 in English", "strength 2", "strength 3", "strength 4"],
+    "weaknesses": ["weakness 1 in English", "weakness 2", "weakness 3"],
+    "opportunities": ["opportunity 1 in English", "opportunity 2", "opportunity 3"],
+    "threats": ["threat 1 in English", "threat 2", "threat 3"]
   },
 
   "energy": {
     "totalProduction": "total primary energy production formatted (e.g. 320 Mtoe, 1,200 TWh)",
     "mix": [
-      { "source": "energy source in ${langName} (e.g. Natural Gas, Renewables, Nuclear, Coal, Oil, Hydro)", "share": percentage number }
+      { "source": "energy source in English (e.g. Natural Gas, Renewables, Nuclear, Coal, Oil, Hydro)", "share": percentage number }
     ],
     "dependence": "energy import dependency (e.g. 75% import dependent)",
     "resources": ["strategic energy or mineral resource 1", "resource 2"],
     "capacity": "installed electricity generation capacity (e.g. 120 GW)",
     "emissions": "total CO₂ emissions formatted (e.g. 320 Mt CO₂/yr)",
-    "policies": ["key energy or climate policy in ${langName}", "policy 2"],
+    "policies": ["key energy or climate policy in English", "policy 2"],
     "mainProviders": ["main energy supplier (country or company)", "supplier 2"]
   },
 
@@ -250,6 +249,127 @@ function parseJsonResponse(text: string): unknown {
   }
 }
 
+async function callClaude(
+  anthropicKey: string,
+  model: string,
+  system: string,
+  userMessage: string,
+  maxTokens = 16000,
+): Promise<{ parsed: unknown; error?: string }> {
+  let claudeResponse: Response;
+  try {
+    claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+  } catch (err) {
+    return { parsed: null, error: `Claude API request failed: ${String(err)}` };
+  }
+
+  if (!claudeResponse.ok) {
+    const errText = await claudeResponse.text();
+    return { parsed: null, error: `Claude API error: ${errText}` };
+  }
+
+  const claudeData = await claudeResponse.json();
+  const textBlock = claudeData.content?.find(
+    (b: { type: string }) => b.type === "text",
+  );
+  const parsed = parseJsonResponse(textBlock?.text || "{}");
+
+  if (!parsed) {
+    return { parsed: null, error: "Failed to parse Claude response as JSON" };
+  }
+
+  return { parsed };
+}
+
+async function generateEnglishData(
+  countryName: string,
+  anthropicKey: string,
+  supabase: ReturnType<typeof createClient>,
+): Promise<{ result: Record<string, unknown> | null; error?: string }> {
+  const model = importantCountries.includes(countryName)
+    ? "claude-sonnet-4-6"
+    : "claude-haiku-4-5-20251001";
+
+  const { parsed, error } = await callClaude(
+    anthropicKey,
+    model,
+    "You are an expert geopolitical and economic analyst. Reply ONLY with a valid JSON object, without additional text, comments, or markdown formatting. All text values must be in English.",
+    buildPrompt(countryName),
+  );
+
+  if (error || !parsed) {
+    return { result: null, error: error || "Failed to generate English data" };
+  }
+
+  const result = {
+    ...(parsed as Record<string, unknown>),
+    lastUpdated: new Date().toLocaleString("en-US"),
+  };
+
+  // Save English data to Supabase
+  const { error: upsertError } = await supabase
+    .from("country_cache")
+    .upsert(
+      {
+        country_code: countryName,
+        language: "en",
+        data: result,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "country_code,language" },
+    );
+
+  if (upsertError) {
+    return { result: null, error: `Supabase upsert failed: ${upsertError.message}` };
+  }
+
+  return { result };
+}
+
+async function translateData(
+  englishData: Record<string, unknown>,
+  language: string,
+  anthropicKey: string,
+): Promise<{ result: Record<string, unknown> | null; error?: string }> {
+  const langName = LANG_NAMES[language] || "English";
+  const englishJson = JSON.stringify(englishData);
+
+  const translationPrompt = `Translate ONLY the text fields of this JSON to ${langName}. Keep ALL numeric values, codes, acronyms, country names in arrays (allies, rivals, partners), organization acronyms, ISO codes, flag emojis, dates, and percentages exactly as they are. Only translate descriptive text fields like: name, officialName, region, subregion, continent, summary, overview, governmentForm, politicalSystem, leadership bios and titles, internalPolitics fields, economy sector names and descriptions, trade sector names, geopolitics text fields, defense fields, society fields, swot items, energy fields, arsenal text fields, strategicReserves text fields. Return ONLY the complete translated JSON object, no other text.
+
+JSON to translate: ${englishJson}`;
+
+  const { parsed, error } = await callClaude(
+    anthropicKey,
+    "claude-haiku-4-5-20251001",
+    `You are a professional translator. Translate the JSON text fields to ${langName}. Return ONLY a valid JSON object. Keep all numeric values, codes, and structure exactly the same.`,
+    translationPrompt,
+  );
+
+  if (error || !parsed) {
+    return { result: null, error: error || "Failed to translate data" };
+  }
+
+  const result = {
+    ...(parsed as Record<string, unknown>),
+    lastUpdated: new Date().toLocaleString(LANG_LOCALES[language] || "en-US"),
+  };
+
+  return { result };
+}
+
 serve(async (req: Request) => {
   // Only accept POST
   if (req.method !== "POST") {
@@ -292,71 +412,73 @@ serve(async (req: Request) => {
     );
   }
 
-  // Call Claude API
-  const langName = LANG_NAMES[language] || "English";
-  const model = importantCountries.includes(countryName) ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
-  let claudeResponse: Response;
-  try {
-    claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 16000,
-        system: `You are an expert geopolitical and economic analyst. Reply ONLY with a valid JSON object, without additional text, comments, or markdown formatting. All text values must be in ${langName}.`,
-        messages: [{ role: "user", content: buildPrompt(countryName, language) }],
-      }),
-    });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Claude API request failed", detail: String(err) }),
-      { status: 502, headers: { "Content-Type": "application/json" } },
-    );
-  }
-
-  if (!claudeResponse.ok) {
-    const errText = await claudeResponse.text();
-    return new Response(
-      JSON.stringify({ error: "Claude API error", detail: errText }),
-      { status: 502, headers: { "Content-Type": "application/json" } },
-    );
-  }
-
-  const claudeData = await claudeResponse.json();
-  const textBlock = claudeData.content?.find(
-    (b: { type: string }) => b.type === "text",
-  );
-  const parsed = parseJsonResponse(textBlock?.text || "{}");
-
-  if (!parsed) {
-    return new Response(
-      JSON.stringify({ error: "Failed to parse Claude response as JSON" }),
-      { status: 502, headers: { "Content-Type": "application/json" } },
-    );
-  }
-
-  const result = {
-    ...(parsed as Record<string, unknown>),
-    lastUpdated: new Date().toLocaleString(LANG_LOCALES[language] || "en-US"),
-  };
-
-  // Save to Supabase country_cache
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     serviceRoleKey ?? "",
   );
 
+  // Step 1: Generate or fetch English data
+  if (language === "en") {
+    const { result, error } = await generateEnglishData(countryName, anthropicKey, supabase);
+    if (error || !result) {
+      return new Response(
+        JSON.stringify({ error: error || "Failed to generate English data" }),
+        { status: 502, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, countryName, language }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // Step 2: For non-English languages, fetch English data first
+  let englishData: Record<string, unknown> | null = null;
+
+  const { data: cachedRow, error: fetchError } = await supabase
+    .from("country_cache")
+    .select("data")
+    .eq("country_code", countryName)
+    .eq("language", "en")
+    .single();
+
+  if (!fetchError && cachedRow?.data) {
+    englishData = cachedRow.data as Record<string, unknown>;
+  } else {
+    // English data doesn't exist — generate it first
+    const { result, error } = await generateEnglishData(countryName, anthropicKey, supabase);
+    if (error || !result) {
+      return new Response(
+        JSON.stringify({ error: error || "Failed to generate English data" }),
+        { status: 502, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    englishData = result;
+  }
+
+  // Step 3: Translate English data to target language
+  const { result: translatedResult, error: translateError } = await translateData(
+    englishData,
+    language,
+    anthropicKey,
+  );
+
+  if (translateError || !translatedResult) {
+    return new Response(
+      JSON.stringify({ error: translateError || "Failed to translate data" }),
+      { status: 502, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // Step 4: Save translated data to Supabase
   const { error: upsertError } = await supabase
     .from("country_cache")
     .upsert(
       {
         country_code: countryName,
         language,
-        data: result,
+        data: translatedResult,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "country_code,language" },
