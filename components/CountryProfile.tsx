@@ -23,6 +23,7 @@ interface CountryProfileProps {
   loading: boolean;
   error: string | null;
   onClose: () => void;
+  onCountryClick?: (name: string) => void;
   language: 'it' | 'en' | 'fr' | 'es' | 'de';
 }
 
@@ -820,7 +821,7 @@ const Skeleton = ({ className }: { className?: string }) => (
   <div className={cn("animate-pulse bg-slate-800 rounded-lg", className)} />
 );
 
-export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data: initialData, loading, error, onClose, language }) => {
+export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data: initialData, loading, error, onClose, onCountryClick, language }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [leaderImages, setLeaderImages] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState<{ [key: string]: boolean }>({});
@@ -852,6 +853,11 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
     setCooldown(isRecentlyRefreshed());
     setRefreshedData(null);
   }, [countryName, language, isRecentlyRefreshed]);
+
+  const handleNavigateToCountry = useCallback((name: string) => {
+    onClose();
+    if (onCountryClick) onCountryClick(name);
+  }, [onClose, onCountryClick]);
 
   const handleRefresh = useCallback(async () => {
     if (refreshing || cooldown) return;
@@ -1379,6 +1385,14 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {(data.trade?.partners || []).map(p => (
+                            <button key={p.code} onClick={() => handleNavigateToCountry(p.name)} className="flex items-center gap-1.5 text-xs bg-slate-900/60 px-2.5 py-1.5 rounded border border-slate-700/50 transition-colors hover:border-slate-600 cursor-pointer">
+                              <span>{getFlagEmoji(p.code)}</span>
+                              <span className="text-blue-400 hover:text-blue-300 hover:underline transition-colors">{p.name}</span>
+                            </button>
+                          ))}
+                        </div>
                       ) : (
                         <p className="text-sm text-slate-500 italic">{t.noPartnerData}</p>
                       )}
@@ -1518,10 +1532,10 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                           </h5>
                           <div className="grid grid-cols-2 gap-2">
                             {(data.geopolitics?.allies || []).length > 0 ? (data.geopolitics?.allies || []).map(ally => (
-                              <div key={ally.name} className="flex items-center gap-2 text-xs text-emerald-100 bg-emerald-900/40 p-2 rounded border border-emerald-800/20 transition-colors duration-200 hover:bg-emerald-900/60 hover:border-emerald-700/40 cursor-default">
+                              <button key={ally.name} onClick={() => handleNavigateToCountry(ally.name)} className="flex items-center gap-2 text-xs text-emerald-100 bg-emerald-900/40 p-2 rounded border border-emerald-800/20 transition-colors duration-200 hover:bg-emerald-900/60 hover:border-emerald-700/40 cursor-pointer text-left">
                                 <span>{getFlagEmoji(ally.code)}</span>
-                                <span className="truncate">{ally.name}</span>
-                              </div>
+                                <span className="truncate text-blue-400 hover:text-blue-300 hover:underline transition-colors">{ally.name}</span>
+                              </button>
                             )) : (
                               <p className="text-[10px] text-slate-500 italic col-span-2">{t.noAllies}</p>
                             )}
@@ -1533,10 +1547,10 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                           </h5>
                           <div className="grid grid-cols-2 gap-2">
                             {(data.geopolitics?.rivals || []).length > 0 ? (data.geopolitics?.rivals || []).map(rival => (
-                              <div key={rival.name} className="flex items-center gap-2 text-xs text-rose-100 bg-rose-900/40 p-2 rounded border border-rose-800/20 transition-colors duration-200 hover:bg-rose-900/60 hover:border-rose-700/40 cursor-default">
+                              <button key={rival.name} onClick={() => handleNavigateToCountry(rival.name)} className="flex items-center gap-2 text-xs text-rose-100 bg-rose-900/40 p-2 rounded border border-rose-800/20 transition-colors duration-200 hover:bg-rose-900/60 hover:border-rose-700/40 cursor-pointer text-left">
                                 <span>{getFlagEmoji(rival.code)}</span>
-                                <span className="truncate">{rival.name}</span>
-                              </div>
+                                <span className="truncate text-blue-400 hover:text-blue-300 hover:underline transition-colors">{rival.name}</span>
+                              </button>
                             )) : (
                               <p className="text-[10px] text-slate-500 italic col-span-2">{t.noRivals}</p>
                             )}

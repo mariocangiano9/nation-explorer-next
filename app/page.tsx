@@ -422,6 +422,7 @@ export default function Page() {
                   loading={loading}
                   error={error}
                   onClose={closeProfile}
+                  onCountryClick={handleCountryClickWithLimit}
                   language={language}
                 />
               </Suspense>
