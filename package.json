@@ -22,6 +22,12 @@
     "recharts": "^3.8.0",
     "tailwind-merge": "^3.5.0"
   },
+  "overrides": {
+    "react-simple-maps": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
