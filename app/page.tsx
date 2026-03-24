@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { WorldMap } from '../components/WorldMap';
-import { HomeView } from '../pages/HomeView';
+import { HomeView } from '../components/views/HomeView';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthModal } from '../components/AuthModal';
 import { useCountryData } from '../hooks/useCountryData';
@@ -21,7 +21,7 @@ const CountryProfile = lazy(() =>
   import('../components/CountryProfile').then(m => ({ default: m.CountryProfile }))
 );
 const RankingView = lazy(() =>
-  import('../pages/RankingView').then(m => ({ default: m.RankingView }))
+  import('../components/views/RankingView').then(m => ({ default: m.RankingView }))
 );
 
 const GUEST_LIMIT = 3;
