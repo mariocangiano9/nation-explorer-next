@@ -17,10 +17,10 @@ export async function GET() {
           fontFamily: 'sans-serif',
         }}
       >
-        <div style={{ fontSize: '108px', fontWeight: 900, color: 'white', letterSpacing: '-2px', lineHeight: 1 }}>
+        <div style={{ fontSize: '120px', fontWeight: 900, color: 'white', letterSpacing: '-4px', lineHeight: 0.9 }}>
           NATION
         </div>
-        <div style={{ fontSize: '96px', fontWeight: 900, color: '#3b82f6', letterSpacing: '-2px', lineHeight: 1 }}>
+        <div style={{ fontSize: '120px', fontWeight: 900, color: '#3b82f6', letterSpacing: '-4px', lineHeight: 0.9 }}>
           EXPLORER
         </div>
         <div style={{ width: '120px', height: '2px', background: '#3b82f6', margin: '16px auto' }} />
