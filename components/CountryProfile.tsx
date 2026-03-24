@@ -1370,29 +1370,31 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                     <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
                       <h4 className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-6">{t.partners}</h4>
                       {(data.trade?.partners || []).length > 0 ? (
-                        <div className="h-72 w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                              layout="vertical" 
-                              data={(data.trade?.partners || []).map(p => ({ ...p, displayName: `${getFlagEmoji(p.code)} ${p.name}` }))}
-                              margin={{ left: 40, right: 30 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={false} />
-                              <XAxis type="number" stroke="#94a3b8" fontSize={10} unit="%" />
-                              <YAxis dataKey="displayName" type="category" stroke="#94a3b8" fontSize={10} width={100} />
-                              <Tooltip content={<ChartTooltip />} />
-                              <Bar dataKey="share" fill="#3b82f6" barSize={20} isAnimationActive={false} shape={(props: any) => <AnimatedBar {...props} />} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          {(data.trade?.partners || []).map(p => (
-                            <button key={p.code} onClick={() => handleNavigateToCountry(p.name)} className="flex items-center gap-1.5 text-xs bg-slate-900/60 px-2.5 py-1.5 rounded border border-slate-700/50 transition-colors hover:border-slate-600 cursor-pointer">
-                              <span>{getFlagEmoji(p.code)}</span>
-                              <span className="text-blue-400 hover:text-blue-300 hover:underline transition-colors">{p.name}</span>
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          <div className="h-72 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                layout="vertical"
+                                data={(data.trade?.partners || []).map(p => ({ ...p, displayName: `${getFlagEmoji(p.code)} ${p.name}` }))}
+                                margin={{ left: 40, right: 30 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={false} />
+                                <XAxis type="number" stroke="#94a3b8" fontSize={10} unit="%" />
+                                <YAxis dataKey="displayName" type="category" stroke="#94a3b8" fontSize={10} width={100} />
+                                <Tooltip content={<ChartTooltip />} />
+                                <Bar dataKey="share" fill="#3b82f6" barSize={20} isAnimationActive={false} shape={(props: any) => <AnimatedBar {...props} />} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-4">
+                            {(data.trade?.partners || []).map(p => (
+                              <button key={p.code} onClick={() => handleNavigateToCountry(p.name)} className="flex items-center gap-1.5 text-xs bg-slate-900/60 px-2.5 py-1.5 rounded border border-slate-700/50 transition-colors hover:border-slate-600 cursor-pointer">
+                                <span>{getFlagEmoji(p.code)}</span>
+                                <span className="text-blue-400 hover:text-blue-300 hover:underline transition-colors">{p.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
                       ) : (
                         <p className="text-sm text-slate-500 italic">{t.noPartnerData}</p>
                       )}
