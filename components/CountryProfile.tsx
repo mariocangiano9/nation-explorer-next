@@ -17,7 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { getCountryData } from '../services/claudeDataService.js';
 import { saveToSupabaseCache } from '../services/supabaseService.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favoritesService';
-import { addToPdfHistory } from '../services/pdfHistoryService';
+import { addToPdfHistory, addToPdfHistorySupabase } from '../services/pdfHistoryService';
 
 interface CountryProfileProps {
   countryName: string;
@@ -1123,6 +1123,9 @@ ${d.swot ? section(t.swotAnalysis, `<div class="two-col">
       w.document.write(html);
       w.document.close();
       addToPdfHistory(d.code, d.name || countryName);
+      if (user?.id) {
+        addToPdfHistorySupabase(user.id, d.code, d.name || countryName).catch(() => {});
+      }
     }
   }, [data, countryName, t]);
 

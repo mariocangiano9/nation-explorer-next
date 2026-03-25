@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, Compass, Clock, FileDown } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../services/favoritesService';
 import { getHistory, clearHistory, getHistorySupabase } from '../services/historyService';
-import { getPdfHistory, clearPdfHistory } from '../services/pdfHistoryService';
+import { getPdfHistory, clearPdfHistory, getPdfHistorySupabase } from '../services/pdfHistoryService';
 import { getFlagEmoji } from '../utils';
 import { countries } from '../store/countries';
 
@@ -120,7 +120,19 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
         if (cancelled) return;
         setHistory([]);
       });
-    setPdfHistory(getPdfHistory().slice(0, 5));
+    getPdfHistorySupabase(userId)
+      .then(rows => {
+        if (cancelled) return;
+        setPdfHistory(rows.map(r => ({
+          countryCode: r.country_code,
+          countryName: r.country_name,
+          downloadedAt: new Date(r.downloaded_at).getTime(),
+        })).slice(0, 5));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPdfHistory(getPdfHistory().slice(0, 5));
+      });
     return () => { cancelled = true; };
   }, [userId]);
 
