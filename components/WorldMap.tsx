@@ -53,7 +53,7 @@ GeoPath.displayName = 'GeoPath';
 
 export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, language }) => {
   const [hovered, setHovered] = useState<{ name: string; code: string } | null>(null);
-  const [position, setPosition] = useState({ coordinates: [15, 25] as [number, number], zoom: 1.5 });
+  const [position, setPosition] = useState({ coordinates: [15, 25] as [number, number], zoom: 1.0 });
   const [mode, setMode] = useState<MapMode>('flat');
   const [rotation, setRotation] = useState<[number, number, number]>([-10, -20, 0]);
   const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
@@ -74,7 +74,7 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, l
   }, []);
 
   const handleReset = useCallback(() => {
-    setPosition({ coordinates: [15, 25], zoom: 1.5 });
+    setPosition({ coordinates: [15, 25], zoom: 1.0 });
     setRotation([-10, -20, 0]);
   }, []);
 
@@ -148,7 +148,7 @@ export const WorldMap: React.FC<WorldMapProps> = React.memo(({ onCountryClick, l
 
   const activeStyle = mapStyle === 'satellite' ? SATELLITE_STYLE : DARK_STYLE;
 
-  const flatProjectionConfig = useMemo(() => ({ scale: 175, center: [0, 0] as [number, number] }), []);
+  const flatProjectionConfig = useMemo(() => ({ scale: 155, center: [0, 0] as [number, number] }), []);
   const flatTranslateExtent = useMemo(() => [[-800, -400], [1600, 800]] as [[number, number], [number, number]], []);
   const globeProjectionConfig = useMemo(() => ({ rotate: rotation, scale: 260 }), [rotation]);
 
