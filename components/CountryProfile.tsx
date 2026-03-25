@@ -5,7 +5,7 @@ import {
   Briefcase, Info, ChevronRight, BarChart3, HeartPulse,
   Smile, BookOpen, Activity, Clock, Phone, Map, Crosshair, User, Compass,
   Sword, Target, Cpu, Anchor, Plane, Truck, ShieldAlert,
-  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw
+  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw, Heart
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -16,6 +16,7 @@ import { cn, getFlagEmoji } from '../utils';
 import { useAuth } from '../hooks/useAuth';
 import { getCountryData } from '../services/claudeDataService.js';
 import { saveToSupabaseCache } from '../services/supabaseService.js';
+import { isFavorite, addFavorite, removeFavorite } from '../services/favoritesService';
 
 interface CountryProfileProps {
   countryName: string;
@@ -150,6 +151,8 @@ const translations = {
     refreshing: "Aggiornamento...",
     recentlyRefreshed: "Aggiornato di recente",
     refreshSuccess: "Dati aggiornati!",
+    addFavorite: "Aggiungi ai preferiti",
+    removeFavorite: "Rimuovi dai preferiti",
     definitions: {
       democracy: "Misura lo stato della democrazia basandosi su processo elettorale, libertà civili e partecipazione politica.",
       press: "Valuta il grado di libertà di cui godono giornalisti e media, e gli sforzi delle autorità per rispettarla.",
@@ -326,6 +329,8 @@ const translations = {
     refreshing: "Refreshing...",
     recentlyRefreshed: "Recently refreshed",
     refreshSuccess: "Data updated!",
+    addFavorite: "Add to favorites",
+    removeFavorite: "Remove from favorites",
     definitions: {
       democracy: "Measures the state of democracy based on electoral process, civil liberties, and political participation.",
       press: "Assesses the degree of freedom enjoyed by journalists and media, and the efforts of authorities to respect it.",
@@ -444,6 +449,8 @@ const translations = {
     refreshing: "Actualisation...",
     recentlyRefreshed: "Actualisé récemment",
     refreshSuccess: "Données actualisées !",
+    addFavorite: "Ajouter aux favoris",
+    removeFavorite: "Retirer des favoris",
     definitions: {
       democracy: "Mesure l'état de la démocratie en fonction du processus électoral, des libertés civiles et de la participation politique.",
       press: "Évalue le degré de liberté dont jouissent les journalistes et les médias.",
@@ -562,6 +569,8 @@ const translations = {
     refreshing: "Actualizando...",
     recentlyRefreshed: "Actualizado recientemente",
     refreshSuccess: "Datos actualizados!",
+    addFavorite: "Agregar a favoritos",
+    removeFavorite: "Quitar de favoritos",
     definitions: {
       democracy: "Mide el estado de la democracia en función del proceso electoral, las libertades civiles y la participación política.",
       press: "Evalúa el grado de libertad del que gozan periodistas y medios de comunicación.",
@@ -680,6 +689,8 @@ const translations = {
     refreshing: "Aktualisierung...",
     recentlyRefreshed: "Kürzlich aktualisiert",
     refreshSuccess: "Daten aktualisiert!",
+    addFavorite: "Zu Favoriten hinzufügen",
+    removeFavorite: "Aus Favoriten entfernen",
     definitions: {
       democracy: "Misst den Zustand der Demokratie anhand von Wahlprozess, bürgerlichen Freiheiten und politischer Teilhabe.",
       press: "Bewertet den Grad der Freiheit, den Journalisten und Medien genießen.",
@@ -828,6 +839,7 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
   const [refreshedData, setRefreshedData] = useState<CountryData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
+  const [favorited, setFavorited] = useState(false);
 
   const data = refreshedData || initialData;
 
@@ -855,6 +867,26 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
     setCooldown(isRecentlyRefreshed());
     setRefreshedData(null);
   }, [countryName, language, isRecentlyRefreshed]);
+
+  useEffect(() => {
+    if (!user || !countryName) return;
+    let cancelled = false;
+    isFavorite(user.id, countryName).then(val => { if (!cancelled) setFavorited(val); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, countryName]);
+
+  const handleToggleFavorite = useCallback(async () => {
+    if (!user || !data) return;
+    try {
+      if (favorited) {
+        await removeFavorite(user.id, countryName);
+        setFavorited(false);
+      } else {
+        await addFavorite(user.id, countryName, data.name || countryName);
+        setFavorited(true);
+      }
+    } catch {}
+  }, [user, data, countryName, favorited]);
 
   const handleNavigateToCountry = useCallback((name: string) => {
     onClose();
@@ -983,6 +1015,13 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                           {t.lastUpdated}: {new Date(data.lastUpdated).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       )}
+                      <button
+                        onClick={handleToggleFavorite}
+                        title={favorited ? t.removeFavorite : t.addFavorite}
+                        className="p-2 rounded-lg transition-all hover:bg-slate-800"
+                      >
+                        <Heart size={16} className={favorited ? 'text-red-400 fill-red-400' : 'text-slate-400 hover:text-red-400'} />
+                      </button>
                       <button
                         onClick={handleRefresh}
                         disabled={refreshing || !canRefresh()}

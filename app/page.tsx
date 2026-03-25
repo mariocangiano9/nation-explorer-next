@@ -7,7 +7,8 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthModal } from '../components/AuthModal';
 import { useCountryData } from '../hooks/useCountryData';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Globe2, Compass, Trophy, ChevronDown, Home, User, LogOut, LogIn } from 'lucide-react';
+import { Search, Globe2, Compass, Trophy, ChevronDown, Home, User, LogOut, LogIn, Heart } from 'lucide-react';
+import { FavoritesPanel } from '../components/FavoritesPanel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, getFlagEmoji } from '../utils';
 import {
@@ -67,7 +68,7 @@ const NavIcon = React.memo(({ icon: Icon, active = false, onClick }: { icon: any
 ));
 
 export default function Page() {
-  const [view, setView] = useState<'home' | 'map' | 'ranking'>('home');
+  const [view, setView] = useState<'home' | 'map' | 'ranking' | 'favorites'>('home');
   const [language, setLanguage] = useState<'it' | 'en' | 'fr' | 'es' | 'de'>('en');
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -207,6 +208,13 @@ export default function Page() {
             active={view === 'ranking'}
             onClick={() => setView('ranking')}
           />
+          {user && (
+            <NavIcon
+              icon={Heart}
+              active={view === 'favorites'}
+              onClick={() => setView('favorites')}
+            />
+          )}
         </nav>
       </aside>
 
@@ -373,7 +381,7 @@ export default function Page() {
                   </div>
                 </div>
               </motion.div>
-            ) : (
+            ) : view === 'ranking' ? (
               <motion.div
                 key="ranking"
                 initial={{ opacity: 0, y: 20 }}
@@ -385,7 +393,17 @@ export default function Page() {
                   <RankingView onCountryClick={handleCountryClickWithLimit} language={language} />
                 </Suspense>
               </motion.div>
-            )}
+            ) : user ? (
+              <motion.div
+                key="favorites"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full h-full p-3 md:p-6 overflow-y-auto"
+              >
+                <FavoritesPanel userId={user.id} language={language} onCountryClick={handleCountryClickWithLimit} />
+              </motion.div>
+            ) : null}
           </AnimatePresence>
         </div>
       </main>
@@ -503,6 +521,13 @@ export default function Page() {
           active={view === 'ranking'}
           onClick={() => setView('ranking')}
         />
+        {user && (
+          <NavIcon
+            icon={Heart}
+            active={view === 'favorites'}
+            onClick={() => setView('favorites')}
+          />
+        )}
       </div>
     </div>
   );
