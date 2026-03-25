@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Compass } from 'lucide-react';
+import { Heart, Compass, Clock } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../services/favoritesService';
+import { getHistory, clearHistory } from '../services/historyService';
 import { getFlagEmoji } from '../utils';
 
 interface FavoritesPanelProps {
@@ -18,6 +19,8 @@ const translations = {
     emptyHint: 'Esplora la mappa e tocca il cuore per salvare i tuoi paesi preferiti.',
     explore: 'Esplora la Mappa',
     remove: 'Rimuovi dai preferiti',
+    recentTitle: 'Visitati di recente',
+    clear: 'Cancella',
   },
   en: {
     title: 'Your favorites',
@@ -26,6 +29,8 @@ const translations = {
     emptyHint: 'Explore the map and tap the heart to save your favorite countries.',
     explore: 'Explore the Map',
     remove: 'Remove from favorites',
+    recentTitle: 'Recently visited',
+    clear: 'Clear',
   },
   fr: {
     title: 'Vos favoris',
@@ -34,6 +39,8 @@ const translations = {
     emptyHint: 'Explorez la carte et appuyez sur le coeur pour sauvegarder vos pays favoris.',
     explore: 'Explorer la Carte',
     remove: 'Retirer des favoris',
+    recentTitle: 'Visités récemment',
+    clear: 'Effacer',
   },
   es: {
     title: 'Tus favoritos',
@@ -42,6 +49,8 @@ const translations = {
     emptyHint: 'Explora el mapa y toca el corazón para guardar tus países favoritos.',
     explore: 'Explorar el Mapa',
     remove: 'Quitar de favoritos',
+    recentTitle: 'Visitados recientemente',
+    clear: 'Borrar',
   },
   de: {
     title: 'Deine Favoriten',
@@ -50,12 +59,15 @@ const translations = {
     emptyHint: 'Erkunde die Karte und tippe auf das Herz, um deine Lieblingsländer zu speichern.',
     explore: 'Karte erkunden',
     remove: 'Aus Favoriten entfernen',
+    recentTitle: 'Kürzlich besucht',
+    clear: 'Löschen',
   },
 };
 
 export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language, onCountryClick, onExplore }) => {
   const [favorites, setFavorites] = useState<{ country_code: string; country_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<{ countryCode: string; countryName: string; visitedAt: number }[]>([]);
   const t = translations[language];
 
   useEffect(() => {
@@ -68,12 +80,21 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
     return () => { cancelled = true; };
   }, [userId]);
 
+  useEffect(() => {
+    setHistory(getHistory().slice(0, 5));
+  }, []);
+
   const handleRemove = async (e: React.MouseEvent, countryCode: string) => {
     e.stopPropagation();
     try {
       await removeFavorite(userId, countryCode);
       setFavorites(prev => prev.filter(f => f.country_code !== countryCode));
     } catch {}
+  };
+
+  const handleClearHistory = () => {
+    clearHistory();
+    setHistory([]);
   };
 
   const Header = ({ count }: { count?: number }) => (
@@ -91,6 +112,38 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
       </div>
     </div>
   );
+
+  const RecentVisits = () => {
+    if (history.length === 0) return null;
+    return (
+      <div className="mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-slate-500" />
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t.recentTitle}</h3>
+          </div>
+          <button
+            onClick={handleClearHistory}
+            className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-wider font-medium"
+          >
+            {t.clear}
+          </button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+          {history.map(entry => (
+            <button
+              key={entry.countryCode + entry.visitedAt}
+              onClick={() => onCountryClick(entry.countryName)}
+              className="flex-shrink-0 flex items-center gap-2.5 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 hover:border-blue-500/30 hover:bg-slate-800/50 transition-all"
+            >
+              <span className="text-xl leading-none">{getFlagEmoji(entry.countryCode)}</span>
+              <span className="text-sm font-medium text-slate-300 whitespace-nowrap">{entry.countryName}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -125,6 +178,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
             </button>
           )}
         </div>
+        <RecentVisits />
       </div>
     );
   }
@@ -151,6 +205,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
           </button>
         ))}
       </div>
+      <RecentVisits />
     </div>
   );
 };

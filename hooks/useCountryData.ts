@@ -3,6 +3,7 @@ import { CountryData, BaseCountry } from '../types';
 import { getCountryData, checkCountryCache } from '../services/claudeDataService';
 import { fetchCountries, getCachedCountries, getStaticCountries } from '../services/countriesService';
 import { countryNames } from '../store/countryNames';
+import { addToHistory } from '../services/historyService';
 
 export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
@@ -46,6 +47,8 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
         language: lang,
       });
     }
+
+    addToHistory(name, name);
 
     const cached = checkCountryCache(name, lang) as (CountryData & { lastUpdated: string }) | null;
     if (cached) {
