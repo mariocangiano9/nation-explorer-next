@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { GoogleAnalytics } from '@next/third-parties/google';
+import Script from 'next/script';
 import './globals.css';
 
 const inter = Inter({
@@ -43,6 +44,12 @@ export default function RootLayout({
       <body className="min-h-screen bg-slate-950 text-slate-200 font-sans">
         {children}
         <GoogleAnalytics gaId="G-QNS3D3ZSZS" />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9335239137166664"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
