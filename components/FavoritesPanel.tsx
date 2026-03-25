@@ -88,7 +88,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   }, [userId]);
 
   useEffect(() => {
-    setHistory(getHistory().slice(0, 5));
+    setHistory(getHistory().slice(0, 8));
     setPdfHistory(getPdfHistory().slice(0, 5));
   }, []);
 
@@ -149,15 +149,16 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
             {t.clear}
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {history.map(entry => (
             <button
               key={entry.countryCode + entry.visitedAt}
               onClick={() => onCountryClick(entry.countryName)}
-              className="flex-shrink-0 flex items-center gap-2.5 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 hover:border-blue-500/30 hover:bg-slate-800/50 transition-all"
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
             >
-              <span className="text-xl leading-none">{getFlagEmoji(entry.countryCode)}</span>
-              <span className="text-sm font-medium text-slate-300 whitespace-nowrap">{entry.countryName}</span>
+              <span className="text-4xl leading-none mt-1">{getFlagEmoji(entry.countryCode)}</span>
+              <span className="text-sm font-bold text-white text-center truncate w-full">{entry.countryName}</span>
+              <span className="text-[10px] text-slate-500">{new Date(entry.visitedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
             </button>
           ))}
         </div>
