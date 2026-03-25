@@ -5,7 +5,7 @@ import {
   Briefcase, Info, ChevronRight, BarChart3, HeartPulse,
   Smile, BookOpen, Activity, Clock, Phone, Map, Crosshair, User, Compass,
   Sword, Target, Cpu, Anchor, Plane, Truck, ShieldAlert,
-  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw, Heart, Download
+  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw, Heart, FileDown
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -149,8 +149,7 @@ const translations = {
     noRivals: "Nessun rivale principale",
     noEnergyPolicies: "Politiche energetiche non disponibili",
     noMissions: "Missioni internazionali non disponibili",
-    downloadPdf: "Scarica PDF",
-    generatingPdf: "Generazione PDF...",
+    pdfReport: "Report PDF",
     refreshData: "Aggiorna dati",
     refreshing: "Aggiornamento...",
     recentlyRefreshed: "Aggiornato di recente",
@@ -331,8 +330,7 @@ const translations = {
     noRivals: "No major rivals",
     noEnergyPolicies: "Energy policies not available",
     noMissions: "International missions not available",
-    downloadPdf: "Download PDF",
-    generatingPdf: "Generating PDF...",
+    pdfReport: "PDF Report",
     refreshData: "Refresh data",
     refreshing: "Refreshing...",
     recentlyRefreshed: "Recently refreshed",
@@ -455,8 +453,7 @@ const translations = {
     noAllies: "Aucun allié principal", noRivals: "Aucun rival principal",
     noEnergyPolicies: "Politiques énergétiques non disponibles",
     noMissions: "Missions internationales non disponibles",
-    downloadPdf: "Télécharger PDF",
-    generatingPdf: "Génération PDF...",
+    pdfReport: "Rapport PDF",
     refreshData: "Actualiser les données",
     refreshing: "Actualisation...",
     recentlyRefreshed: "Actualisé récemment",
@@ -579,8 +576,7 @@ const translations = {
     noAllies: "Ningún aliado principal", noRivals: "Ningún rival principal",
     noEnergyPolicies: "Políticas energéticas no disponibles",
     noMissions: "Misiones internacionales no disponibles",
-    downloadPdf: "Descargar PDF",
-    generatingPdf: "Generando PDF...",
+    pdfReport: "Informe PDF",
     refreshData: "Actualizar datos",
     refreshing: "Actualizando...",
     recentlyRefreshed: "Actualizado recientemente",
@@ -703,8 +699,7 @@ const translations = {
     noAllies: "Keine wichtigen Verbündeten", noRivals: "Keine wichtigen Rivalen",
     noEnergyPolicies: "Energiepolitik nicht verfügbar",
     noMissions: "Internationale Missionen nicht verfügbar",
-    downloadPdf: "PDF herunterladen",
-    generatingPdf: "PDF wird erstellt...",
+    pdfReport: "PDF-Bericht",
     refreshData: "Daten aktualisieren",
     refreshing: "Aktualisierung...",
     recentlyRefreshed: "Kürzlich aktualisiert",
@@ -864,8 +859,6 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
   const [favorited, setFavorited] = useState(false);
   const [showFavLoginPrompt, setShowFavLoginPrompt] = useState(false);
   const [heartAnimating, setHeartAnimating] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const profileContentRef = useRef<HTMLDivElement>(null);
 
   const data = refreshedData || initialData;
 
@@ -949,40 +942,189 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
     }
   }, [countryName, language, refreshing, cooldown]);
 
-  const handleDownloadPdf = useCallback(async () => {
-    if (!profileContentRef.current || !data || generatingPdf) return;
-    setGeneratingPdf(true);
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(profileContentRef.current, {
-        backgroundColor: '#0f172a',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 297; // A4 height in mm
-      while (heightLeft > 0) {
-        position -= 297;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= 297;
-      }
-      pdf.save(`${countryName}_${language}.pdf`);
-      addToPdfHistory(data.code, data.name || countryName);
-    } catch {
-      // PDF generation failed silently
-    } finally {
-      setGeneratingPdf(false);
+  const handleDownloadPdf = useCallback(() => {
+    if (!data) return;
+    const d = data;
+    const flag = getFlagEmoji(d.code);
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    const section = (title: string, content: string) =>
+      `<div class="section"><h2>${title}</h2>${content}</div>`;
+
+    const row = (label: string, value: string | number | undefined | null) =>
+      value != null && value !== '' ? `<tr><td class="label">${label}</td><td>${value}</td></tr>` : '';
+
+    const list = (items: string[] | undefined) =>
+      items?.length ? `<ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '';
+
+    const leaderBlock = (l: { name?: string; title?: string; party?: string; termStart?: string; bio?: string } | undefined, heading: string) =>
+      l?.name ? `<div class="leader"><strong>${heading}</strong><br/>${l.name}${l.title ? ` — ${l.title}` : ''}${l.party ? `<br/>${l.party}` : ''}${l.termStart ? ` (${l.termStart})` : ''}${l.bio ? `<br/><em>${l.bio}</em>` : ''}</div>` : '';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${d.name} — Nation Explorer Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1a1a;font-size:11px;line-height:1.5;padding:30px 40px}
+.header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1a1a1a;padding-bottom:12px;margin-bottom:20px}
+.header .flag{font-size:40px;line-height:1}
+.header h1{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.header .sub{color:#666;font-size:11px;margin-top:2px}
+.brand{font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase}
+.overview{font-size:12px;color:#333;margin-bottom:20px;line-height:1.6;border-left:3px solid #2563eb;padding-left:12px}
+.section{margin-bottom:18px;page-break-inside:avoid}
+.section h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2563eb;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+tr{border-bottom:1px solid #f3f4f6}
+td{padding:4px 8px 4px 0;vertical-align:top}
+td.label{font-weight:600;color:#555;width:40%;white-space:nowrap}
+ul{padding-left:18px;margin:4px 0}
+li{margin-bottom:2px}
+.leader{margin-bottom:8px;padding:6px 10px;background:#f8fafc;border-radius:4px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:9px;color:#999}
+@media print{body{padding:20px 25px}.section{page-break-inside:avoid}}
+</style></head><body>
+<div class="header">
+  <span class="flag">${flag}</span>
+  <div>
+    <div class="brand">Nation Explorer</div>
+    <h1>${d.name}</h1>
+    <div class="sub">${d.officialName || ''}${d.region ? ` — ${d.region}` : ''}${d.continent ? ` — ${d.continent}` : ''}</div>
+  </div>
+</div>
+
+${d.overview ? `<div class="overview">${d.overview}</div>` : ''}
+
+<div class="two-col">
+${section(t.overview, `<table>
+${row(t.capital, d.capital)}
+${row(t.population, d.population?.toLocaleString())}
+${row(t.popDensity, d.populationDensity ? `${d.populationDensity} /km²` : '')}
+${row(t.area, d.area ? `${d.area.toLocaleString()} km²` : '')}
+${row(t.languages, d.languages?.join(', '))}
+${row(t.currency, d.currency)}
+${row('Timezones', d.timezones?.join(', '))}
+${row(t.form, d.governmentForm)}
+${row(t.system, d.politicalSystem)}
+${d.motto ? row('Motto', d.motto) : ''}
+</table>`)}
+
+${section(t.indicators, `<table>
+${row(t.democracy, d.indicators?.democracyIndex)}
+${row(t.press, d.indicators?.pressFreedom)}
+${row(t.corruption, d.indicators?.corruptionPerception)}
+${row(t.econFreedom, d.indicators?.economicFreedom)}
+</table>`)}
+</div>
+
+${section(t.politics, `
+${leaderBlock(d.leadership?.headOfState, t.headOfState)}
+${leaderBlock(d.leadership?.headOfGovernment, t.headOfGov)}
+<table>
+${row(t.stability, d.internalPolitics?.stability)}
+${row(t.elections, d.internalPolitics?.recentElections)}
+${row(t.nextElections, d.internalPolitics?.nextElections)}
+${row(t.parliament, d.internalPolitics?.parliamentStructure)}
+${row(t.orientation, d.internalPolitics?.politicalOrientation)}
+</table>`)}
+
+<div class="two-col">
+${section(t.economy, `<table>
+${row(t.gdpNominal, d.economy?.gdpNominal)}
+${row(t.gdpCapita, d.economy?.gdpPerCapita)}
+${row(t.growth, d.economy?.growth)}
+${row(t.inflation, d.economy?.inflation)}
+${row(t.unemployment, d.economy?.unemployment)}
+${row(t.debtGdp, d.economy?.debtToGdp)}
+${row(t.giniIndex, d.economy?.giniIndex)}
+${row(t.fdi, d.economy?.fdi)}
+${row('Rating', d.economy?.rating)}
+</table>
+${d.economy?.sectors?.length ? `<strong>${t.economicSectors}</strong><table>${d.economy.sectors.map(s => `<tr><td class="label">${s.name}</td><td>${s.share}%</td></tr>`).join('')}</table>` : ''}`)}
+
+${section(t.geopolitics, `<table>
+${row(t.strategicPosition, d.geopolitics?.position)}
+${row(t.influence, d.geopolitics?.influence)}
+${row('Soft Power', d.geopolitics?.softPower)}
+${row(t.strategicPosition, d.geopolitics?.strategicImportance)}
+</table>
+${d.geopolitics?.allies?.length ? `<strong>${t.alliances}</strong><ul>${d.geopolitics.allies.map(a => `<li>${a.name}</li>`).join('')}</ul>` : ''}
+${d.geopolitics?.rivals?.length ? `<strong>Rivals</strong><ul>${d.geopolitics.rivals.map(r => `<li>${r.name}</li>`).join('')}</ul>` : ''}
+${d.geopolitics?.treaties?.length ? `<strong>${t.treaties}</strong>${list(d.geopolitics.treaties)}` : ''}
+${d.geopolitics?.disputes?.length ? `<strong>${t.disputes}</strong>${list(d.geopolitics.disputes)}` : ''}
+${d.geopolitics?.conflicts?.length ? `<strong>${t.conflicts}</strong>${list(d.geopolitics.conflicts)}` : ''}`)}
+</div>
+
+${d.organizations?.length ? section('Organizations', `<p>${d.organizations.join(', ')}</p>`) : ''}
+
+<div class="two-col">
+${section(t.society, `<table>
+${row(t.medianAge, d.society?.demographics?.medianAge)}
+${row(t.urbanization, d.society?.demographics?.urbanization)}
+${row(t.growthRate, d.society?.demographics?.growthRate)}
+${row(t.education, d.society?.education)}
+${row(t.healthcare, d.society?.healthcare)}
+${row(t.hdi, d.society?.humanDevelopmentIndex)}
+${row(t.lifeExpectancy, d.society?.lifeExpectancy ? `${d.society.lifeExpectancy} yr` : '')}
+${row(t.happinessIndex, d.society?.happinessIndex)}
+${row(t.socialCohesion, d.society?.socialCohesion)}
+</table>`)}
+
+${section(t.energy, `<table>
+${row(t.totalProduction, d.energy?.totalProduction)}
+${row(t.energyDependence, d.energy?.dependence)}
+${row(t.productionCapacity, d.energy?.capacity)}
+${row(t.co2Emissions, d.energy?.emissions)}
+</table>
+${d.energy?.mix?.length ? `<strong>${t.energyMix}</strong><table>${d.energy.mix.map(m => `<tr><td class="label">${m.source}</td><td>${m.share}%</td></tr>`).join('')}</table>` : ''}
+${d.energy?.resources?.length ? `<strong>${t.energyResources}</strong>${list(d.energy.resources)}` : ''}
+${d.energy?.mainProviders?.length ? `<strong>${t.mainProviders}</strong>${list(d.energy.mainProviders)}` : ''}
+${d.energy?.policies?.length ? `<strong>${t.energyPolicies}</strong>${list(d.energy.policies)}` : ''}`)}
+</div>
+
+<div class="two-col">
+${section(t.arsenal, `<table>
+${row('Power Index', d.arsenal?.militaryPowerIndex)}
+${row(t.militaryEquipment + ' — ' + t.tanks, d.arsenal?.equipment?.tanks)}
+${row(t.aircraft, d.arsenal?.equipment?.aircraft)}
+${row(t.ships, d.arsenal?.equipment?.ships)}
+${row(t.activePersonnel, d.arsenal?.personnel?.active)}
+${row(t.reservePersonnel, d.arsenal?.personnel?.reserve)}
+${row(t.nuclearWeapons, d.arsenal?.nuclearWeapons)}
+${row(t.militaryTech, d.arsenal?.militaryTech)}
+</table>
+${d.arsenal?.internationalMissions?.length ? `<strong>${t.internationalMissions}</strong>${list(d.arsenal.internationalMissions)}` : ''}`)}
+
+${section(t.strategicReserves, `<table>
+${row(t.goldReserves, d.strategicReserves?.goldReserves)}
+${row(t.foreignExchangeReserves, d.strategicReserves?.foreignExchangeReserves)}
+${row(t.miningProduction, d.strategicReserves?.miningProduction)}
+${row(t.sovereignWealthFunds, d.strategicReserves?.sovereignWealthFunds)}
+${row(t.economicSecurity, d.strategicReserves?.economicSecurity)}
+</table>
+${d.strategicReserves?.rawMaterials?.length ? `<strong>${t.rawMaterials}</strong>${list(d.strategicReserves.rawMaterials)}` : ''}`)}
+</div>
+
+${d.swot ? section(t.swotAnalysis, `<div class="two-col">
+<div><strong>${t.strengths}</strong>${list(d.swot.strengths)}</div>
+<div><strong>${t.weaknesses}</strong>${list(d.swot.weaknesses)}</div>
+<div><strong>${'Opportunities'}</strong>${list(d.swot.opportunities)}</div>
+<div><strong>${'Threats'}</strong>${list(d.swot.threats)}</div>
+</div>`) : ''}
+
+<div class="footer">
+  <span>nationexplorer.com</span>
+  <span>${dateStr}</span>
+</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      addToPdfHistory(d.code, d.name || countryName);
     }
-  }, [data, countryName, language, generatingPdf]);
+  }, [data, countryName, t]);
 
   useEffect(() => {
     if (data && activeTab === 'politics' && data.leadership) {
@@ -1071,6 +1213,15 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                         )}
                       />
                     </button>
+                    {user && (
+                      <button
+                        onClick={handleDownloadPdf}
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      >
+                        <FileDown size={14} />
+                        {t.pdfReport}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
@@ -1097,14 +1248,6 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                           {t.lastUpdated}: {new Date(data.lastUpdated).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       )}
-                      <button
-                        onClick={handleDownloadPdf}
-                        disabled={generatingPdf}
-                        title={t.downloadPdf}
-                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {generatingPdf ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                      </button>
                       <button
                         onClick={handleRefresh}
                         disabled={refreshing || !canRefresh()}
@@ -1169,7 +1312,7 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
               </button>
             </div>
           ) : data && (
-            <div ref={profileContentRef} className="max-w-7xl mx-auto p-4 md:p-6 pb-24">
+            <div className="max-w-7xl mx-auto p-4 md:p-6 pb-24">
               {/* Summary */}
               <div className="mb-8">
                 <p className="text-slate-300 leading-relaxed italic border-l-2 border-blue-500 pl-4 py-1">
