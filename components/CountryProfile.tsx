@@ -5,7 +5,7 @@ import {
   Briefcase, Info, ChevronRight, BarChart3, HeartPulse,
   Smile, BookOpen, Activity, Clock, Phone, Map, Crosshair, User, Compass,
   Sword, Target, Cpu, Anchor, Plane, Truck, ShieldAlert,
-  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw, Heart
+  Coins, Gem, Pickaxe, Wallet, Landmark as Bank, Loader2, RefreshCw, Heart, Download
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { getCountryData } from '../services/claudeDataService.js';
 import { saveToSupabaseCache } from '../services/supabaseService.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favoritesService';
+import { addToPdfHistory } from '../services/pdfHistoryService';
 
 interface CountryProfileProps {
   countryName: string;
@@ -148,6 +149,8 @@ const translations = {
     noRivals: "Nessun rivale principale",
     noEnergyPolicies: "Politiche energetiche non disponibili",
     noMissions: "Missioni internazionali non disponibili",
+    downloadPdf: "Scarica PDF",
+    generatingPdf: "Generazione PDF...",
     refreshData: "Aggiorna dati",
     refreshing: "Aggiornamento...",
     recentlyRefreshed: "Aggiornato di recente",
@@ -328,6 +331,8 @@ const translations = {
     noRivals: "No major rivals",
     noEnergyPolicies: "Energy policies not available",
     noMissions: "International missions not available",
+    downloadPdf: "Download PDF",
+    generatingPdf: "Generating PDF...",
     refreshData: "Refresh data",
     refreshing: "Refreshing...",
     recentlyRefreshed: "Recently refreshed",
@@ -450,6 +455,8 @@ const translations = {
     noAllies: "Aucun allié principal", noRivals: "Aucun rival principal",
     noEnergyPolicies: "Politiques énergétiques non disponibles",
     noMissions: "Missions internationales non disponibles",
+    downloadPdf: "Télécharger PDF",
+    generatingPdf: "Génération PDF...",
     refreshData: "Actualiser les données",
     refreshing: "Actualisation...",
     recentlyRefreshed: "Actualisé récemment",
@@ -572,6 +579,8 @@ const translations = {
     noAllies: "Ningún aliado principal", noRivals: "Ningún rival principal",
     noEnergyPolicies: "Políticas energéticas no disponibles",
     noMissions: "Misiones internacionales no disponibles",
+    downloadPdf: "Descargar PDF",
+    generatingPdf: "Generando PDF...",
     refreshData: "Actualizar datos",
     refreshing: "Actualizando...",
     recentlyRefreshed: "Actualizado recientemente",
@@ -694,6 +703,8 @@ const translations = {
     noAllies: "Keine wichtigen Verbündeten", noRivals: "Keine wichtigen Rivalen",
     noEnergyPolicies: "Energiepolitik nicht verfügbar",
     noMissions: "Internationale Missionen nicht verfügbar",
+    downloadPdf: "PDF herunterladen",
+    generatingPdf: "PDF wird erstellt...",
     refreshData: "Daten aktualisieren",
     refreshing: "Aktualisierung...",
     recentlyRefreshed: "Kürzlich aktualisiert",
@@ -853,6 +864,8 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
   const [favorited, setFavorited] = useState(false);
   const [showFavLoginPrompt, setShowFavLoginPrompt] = useState(false);
   const [heartAnimating, setHeartAnimating] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const profileContentRef = useRef<HTMLDivElement>(null);
 
   const data = refreshedData || initialData;
 
@@ -935,6 +948,41 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
       setRefreshing(false);
     }
   }, [countryName, language, refreshing, cooldown]);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!profileContentRef.current || !data || generatingPdf) return;
+    setGeneratingPdf(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(profileContentRef.current, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297; // A4 height in mm
+      while (heightLeft > 0) {
+        position -= 297;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+      }
+      pdf.save(`${countryName}_${language}.pdf`);
+      addToPdfHistory(data.code, data.name || countryName);
+    } catch {
+      // PDF generation failed silently
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [data, countryName, language, generatingPdf]);
 
   useEffect(() => {
     if (data && activeTab === 'politics' && data.leadership) {
@@ -1050,6 +1098,14 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                         </span>
                       )}
                       <button
+                        onClick={handleDownloadPdf}
+                        disabled={generatingPdf}
+                        title={t.downloadPdf}
+                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {generatingPdf ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      </button>
+                      <button
                         onClick={handleRefresh}
                         disabled={refreshing || !canRefresh()}
                         title={canRefresh() ? t.refreshData : t.recentlyRefreshed}
@@ -1113,7 +1169,7 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
               </button>
             </div>
           ) : data && (
-            <div className="max-w-7xl mx-auto p-4 md:p-6 pb-24">
+            <div ref={profileContentRef} className="max-w-7xl mx-auto p-4 md:p-6 pb-24">
               {/* Summary */}
               <div className="mb-8">
                 <p className="text-slate-300 leading-relaxed italic border-l-2 border-blue-500 pl-4 py-1">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Compass, Clock } from 'lucide-react';
+import { Heart, Compass, Clock, FileDown } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../services/favoritesService';
 import { getHistory, clearHistory } from '../services/historyService';
+import { getPdfHistory, clearPdfHistory } from '../services/pdfHistoryService';
 import { getFlagEmoji } from '../utils';
 
 interface FavoritesPanelProps {
@@ -20,6 +21,7 @@ const translations = {
     explore: 'Esplora la Mappa',
     remove: 'Rimuovi dai preferiti',
     recentTitle: 'Visitati di recente',
+    reportsTitle: 'Report scaricati',
     clear: 'Cancella',
   },
   en: {
@@ -30,6 +32,7 @@ const translations = {
     explore: 'Explore the Map',
     remove: 'Remove from favorites',
     recentTitle: 'Recently visited',
+    reportsTitle: 'Downloaded reports',
     clear: 'Clear',
   },
   fr: {
@@ -40,6 +43,7 @@ const translations = {
     explore: 'Explorer la Carte',
     remove: 'Retirer des favoris',
     recentTitle: 'Visités récemment',
+    reportsTitle: 'Rapports téléchargés',
     clear: 'Effacer',
   },
   es: {
@@ -50,6 +54,7 @@ const translations = {
     explore: 'Explorar el Mapa',
     remove: 'Quitar de favoritos',
     recentTitle: 'Visitados recientemente',
+    reportsTitle: 'Informes descargados',
     clear: 'Borrar',
   },
   de: {
@@ -60,6 +65,7 @@ const translations = {
     explore: 'Karte erkunden',
     remove: 'Aus Favoriten entfernen',
     recentTitle: 'Kürzlich besucht',
+    reportsTitle: 'Heruntergeladene Berichte',
     clear: 'Löschen',
   },
 };
@@ -68,6 +74,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   const [favorites, setFavorites] = useState<{ country_code: string; country_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<{ countryCode: string; countryName: string; visitedAt: number }[]>([]);
+  const [pdfHistory, setPdfHistory] = useState<{ countryCode: string; countryName: string; downloadedAt: number }[]>([]);
   const t = translations[language];
 
   useEffect(() => {
@@ -82,6 +89,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
 
   useEffect(() => {
     setHistory(getHistory().slice(0, 5));
+    setPdfHistory(getPdfHistory().slice(0, 5));
   }, []);
 
   const handleRemove = async (e: React.MouseEvent, countryCode: string) => {
@@ -95,6 +103,18 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   const handleClearHistory = () => {
     clearHistory();
     setHistory([]);
+  };
+
+  const handleClearPdfHistory = () => {
+    clearPdfHistory();
+    setPdfHistory([]);
+  };
+
+  const formatDate = (ts: number) => {
+    return new Date(ts).toLocaleDateString(
+      { it: 'it-IT', en: 'en-US', fr: 'fr-FR', es: 'es-ES', de: 'de-DE' }[language],
+      { day: '2-digit', month: '2-digit' }
+    );
   };
 
   const Header = ({ count }: { count?: number }) => (
@@ -145,6 +165,41 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
     );
   };
 
+  const DownloadedReports = () => {
+    if (pdfHistory.length === 0) return null;
+    return (
+      <div className="mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileDown size={16} className="text-slate-500" />
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t.reportsTitle}</h3>
+          </div>
+          <button
+            onClick={handleClearPdfHistory}
+            className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-wider font-medium"
+          >
+            {t.clear}
+          </button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+          {pdfHistory.map(entry => (
+            <button
+              key={entry.countryCode + entry.downloadedAt}
+              onClick={() => onCountryClick(entry.countryName)}
+              className="flex-shrink-0 flex items-center gap-2.5 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 hover:border-blue-500/30 hover:bg-slate-800/50 transition-all"
+            >
+              <span className="text-xl leading-none">{getFlagEmoji(entry.countryCode)}</span>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium text-slate-300 whitespace-nowrap">{entry.countryName}</span>
+                <span className="text-[10px] text-slate-600">{formatDate(entry.downloadedAt)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto p-4 md:p-8">
@@ -179,6 +234,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
           )}
         </div>
         <RecentVisits />
+        <DownloadedReports />
       </div>
     );
   }
@@ -206,6 +262,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
         ))}
       </div>
       <RecentVisits />
+      <DownloadedReports />
     </div>
   );
 };
