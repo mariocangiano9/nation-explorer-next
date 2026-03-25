@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthModal } from '../components/AuthModal';
 import { useCountryData } from '../hooks/useCountryData';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Globe2, Compass, Trophy, ChevronDown, Home, User, LogOut, LogIn, Heart } from 'lucide-react';
+import { Search, Globe2, Compass, Trophy, Home, User, LogOut, LogIn, Heart } from 'lucide-react';
 import { FavoritesPanel } from '../components/FavoritesPanel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, getFlagEmoji } from '../utils';
@@ -76,10 +76,8 @@ export default function Page() {
   const [pendingCountry, setPendingCountry] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const langMenuRef = useRef<HTMLDivElement>(null);
-  const langButtonRef = useRef<HTMLButtonElement>(null);
-  const langDropdownRef = useRef<HTMLDivElement>(null);
+  const [showUserPanel, setShowUserPanel] = useState(false);
+  const userPanelRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
 
@@ -139,24 +137,12 @@ export default function Page() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        langMenuRef.current && !langMenuRef.current.contains(target) &&
-        langDropdownRef.current && !langDropdownRef.current.contains(target)
-      ) {
-        setShowLangMenu(false);
+      if (userPanelRef.current && !userPanelRef.current.contains(e.target as Node)) {
+        setShowUserPanel(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowLangMenu(false);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   const handleCountryClickWithLimit = (name: string) => {
@@ -226,6 +212,15 @@ export default function Page() {
             onClick={() => user ? setView('favorites') : setShowAuthModal(true)}
           />
         </nav>
+        <div className="mt-auto">
+          <button
+            onClick={() => setShowUserPanel(v => !v)}
+            className="relative w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-600 transition-all"
+          >
+            <User size={18} />
+            {user && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-slate-900" />}
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -293,22 +288,6 @@ export default function Page() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-            <div className="shrink-0" ref={langMenuRef}>
-              <button
-                ref={langButtonRef}
-                onClick={() => setShowLangMenu(v => !v)}
-                className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 hover:border-slate-700 transition-all text-sm font-bold uppercase tracking-wider"
-              >
-                <span className="text-base leading-none">
-                  {{ en: '🇬🇧', it: '🇮🇹', fr: '🇫🇷', es: '🇪🇸', de: '🇩🇪' }[language]}
-                </span>
-                <span className="text-xs">{{ en: 'EN', it: 'IT', fr: 'FR', es: 'ES', de: 'DE' }[language]}</span>
-                <ChevronDown
-                  size={14}
-                  className={cn("text-slate-400 transition-transform duration-200", showLangMenu && "rotate-180")}
-                />
-              </button>
             </div>
           </div>
 
@@ -471,46 +450,105 @@ export default function Page() {
         )}
       </AnimatePresence>
 
-      {/* Language Dropdown (fixed, outside header to avoid clipping) */}
+      {/* User Panel (desktop sidebar) */}
       <AnimatePresence>
-        {showLangMenu && (
+        {showUserPanel && (
           <motion.div
-            ref={langDropdownRef}
-            initial={{ opacity: 0, scale: 0.95, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -6 }}
-            transition={{ duration: 0.1 }}
-            className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden"
-            style={{
-              position: 'fixed',
-              top: '5rem',
-              right: langButtonRef.current
-                ? window.innerWidth - langButtonRef.current.getBoundingClientRect().right
-                : 60,
-              zIndex: 200,
-            }}
+            ref={userPanelRef}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.15 }}
+            className="fixed left-20 bottom-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 w-64 z-[200] hidden md:block"
           >
-            {([
-              { code: 'en', flag: '🇬🇧', label: 'EN' },
-              { code: 'it', flag: '🇮🇹', label: 'IT' },
-              { code: 'fr', flag: '🇫🇷', label: 'FR' },
-              { code: 'es', flag: '🇪🇸', label: 'ES' },
-              { code: 'de', flag: '🇩🇪', label: 'DE' },
-            ] as const).map(({ code, flag, label }) => (
-              <button
-                key={code}
-                onClick={() => { handleLanguageChange(code); setShowLangMenu(false); }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors",
-                  language === code
-                    ? "text-blue-400 bg-slate-800"
-                    : "text-slate-200 hover:bg-white/5"
-                )}
-              >
-                <span className="text-base leading-none">{flag}</span>
-                {label}
-              </button>
-            ))}
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm uppercase shrink-0">
+                    {user.email?.[0] || '?'}
+                  </div>
+                  <p className="text-sm text-slate-300 truncate flex-1">{user.email}</p>
+                </div>
+                <div className="border-t border-slate-800 my-3" />
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  {{ it: 'Lingua / Language', en: 'Language', fr: 'Langue', es: 'Idioma', de: 'Sprache' }[language]}
+                </p>
+                <div className="grid grid-cols-5 gap-1.5 mb-3">
+                  {([
+                    { code: 'it' as const, flag: '🇮🇹', label: 'IT' },
+                    { code: 'en' as const, flag: '🇬🇧', label: 'EN' },
+                    { code: 'fr' as const, flag: '🇫🇷', label: 'FR' },
+                    { code: 'es' as const, flag: '🇪🇸', label: 'ES' },
+                    { code: 'de' as const, flag: '🇩🇪', label: 'DE' },
+                  ]).map(({ code, flag, label }) => (
+                    <button
+                      key={code}
+                      onClick={() => handleLanguageChange(code)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all",
+                        language === code
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      )}
+                    >
+                      <span className="text-base leading-none">{flag}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-slate-800 my-3" />
+                <button
+                  onClick={async () => { await signOut(); setShowUserPanel(false); }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                >
+                  <LogOut size={14} />
+                  {{ it: 'Esci', en: 'Logout', fr: 'Déconnexion', es: 'Cerrar sesión', de: 'Abmelden' }[language]}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-center mb-3">
+                  <Globe2 size={32} className="text-slate-600" />
+                </div>
+                <p className="text-sm text-slate-400 text-center mb-4">
+                  {{ it: 'Accedi per sbloccare tutte le funzionalità', en: 'Sign in to unlock all features', fr: 'Connectez-vous pour débloquer toutes les fonctionnalités', es: 'Inicia sesión para desbloquear todas las funciones', de: 'Melden Sie sich an, um alle Funktionen freizuschalten' }[language]}
+                </p>
+                <button
+                  onClick={() => { setShowUserPanel(false); setShowAuthModal(true); }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition-colors mb-3"
+                >
+                  <LogIn size={14} />
+                  {{ it: 'Accedi', en: 'Sign In', fr: 'Se connecter', es: 'Iniciar sesión', de: 'Anmelden' }[language]}
+                </button>
+                <div className="border-t border-slate-800 my-3" />
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  {{ it: 'Lingua / Language', en: 'Language', fr: 'Langue', es: 'Idioma', de: 'Sprache' }[language]}
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {([
+                    { code: 'it' as const, flag: '🇮🇹', label: 'IT' },
+                    { code: 'en' as const, flag: '🇬🇧', label: 'EN' },
+                    { code: 'fr' as const, flag: '🇫🇷', label: 'FR' },
+                    { code: 'es' as const, flag: '🇪🇸', label: 'ES' },
+                    { code: 'de' as const, flag: '🇩🇪', label: 'DE' },
+                  ]).map(({ code, flag, label }) => (
+                    <button
+                      key={code}
+                      onClick={() => handleLanguageChange(code)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all",
+                        language === code
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      )}
+                    >
+                      <span className="text-base leading-none">{flag}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
