@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     icon: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  verification: {
+    google: 'ca-pub-9335239137166664',
+  },
 };
 
 export default function RootLayout({
@@ -41,6 +44,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head>
+        <meta name="google-adsense-account" content="ca-pub-9335239137166664" />
+      </head>
       <body className="min-h-screen bg-slate-950 text-slate-200 font-sans">
         {children}
         <GoogleAnalytics gaId="G-QNS3D3ZSZS" />
