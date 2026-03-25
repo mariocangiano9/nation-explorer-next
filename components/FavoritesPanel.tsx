@@ -4,6 +4,21 @@ import { getFavorites, removeFavorite } from '../services/favoritesService';
 import { getHistory, clearHistory, getHistorySupabase } from '../services/historyService';
 import { getPdfHistory, clearPdfHistory } from '../services/pdfHistoryService';
 import { getFlagEmoji } from '../utils';
+import { countries } from '../store/countries';
+
+function getCodeFromHistory(item: { country_code: string; country_name: string }): string {
+  // If it's already a 2-letter code, use it
+  if (item.country_code.length <= 3) return item.country_code;
+
+  // Otherwise look up by name
+  const found = countries.find(c =>
+    c.name === item.country_code ||
+    c.name === item.country_name ||
+    item.country_name.includes(c.name) ||
+    c.name.includes(item.country_name)
+  );
+  return found?.code || 'UN';
+}
 
 interface FavoritesPanelProps {
   userId: string;
@@ -173,7 +188,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
               onClick={() => onCountryClick(entry.country_name)}
               className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
             >
-              <span className="text-4xl leading-none mt-1">{getFlagEmoji(entry.country_code)}</span>
+              <span className="text-4xl leading-none mt-1">{getFlagEmoji(getCodeFromHistory(entry))}</span>
               <span className="text-sm font-bold text-white text-center truncate w-full">{entry.country_name}</span>
               <span className="text-[10px] text-slate-500">{new Date(entry.visitedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
             </button>
