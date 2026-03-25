@@ -17,6 +17,7 @@ import {
   getPendingCountry,
   signOut,
 } from '../services/authService';
+import { saveLanguagePreference, getLanguagePreference } from '../services/preferencesService';
 
 const CountryProfile = lazy(() =>
   import('../components/CountryProfile').then(m => ({ default: m.CountryProfile }))
@@ -114,6 +115,14 @@ export default function Page() {
         handleCountryClickRef.current(pending);
         clearPendingCountry();
       }
+      // Restore saved language preference
+      getLanguagePreference(currentId)
+        .then(savedLang => {
+          if (savedLang && ['it', 'en', 'fr', 'es', 'de'].includes(savedLang)) {
+            setLanguage(savedLang as 'it' | 'en' | 'fr' | 'es' | 'de');
+          }
+        })
+        .catch(() => {});
     }
     prevUserIdRef.current = currentId;
   }, [user?.id]);
@@ -183,6 +192,9 @@ export default function Page() {
   const handleLanguageChange = (newLang: 'it' | 'en' | 'fr' | 'es' | 'de') => {
     if (newLang === language) return;
     setLanguage(newLang);
+    if (user) {
+      saveLanguagePreference(user.id, newLang).catch(() => {});
+    }
     if (selectedCountry) {
       handleCountryClick(selectedCountry, newLang);
     }
