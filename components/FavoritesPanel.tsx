@@ -10,11 +10,11 @@ interface FavoritesPanelProps {
 }
 
 const translations = {
-  it: { title: 'I tuoi preferiti', empty: 'Nessun paese nei preferiti', remove: 'Rimuovi' },
-  en: { title: 'Your favorites', empty: 'No favorite countries yet', remove: 'Remove' },
-  fr: { title: 'Vos favoris', empty: 'Aucun pays favori', remove: 'Supprimer' },
-  es: { title: 'Tus favoritos', empty: 'Sin países favoritos', remove: 'Eliminar' },
-  de: { title: 'Deine Favoriten', empty: 'Keine Lieblingsländer', remove: 'Entfernen' },
+  it: { title: 'I tuoi preferiti', empty: 'Nessun paese nei preferiti', emptyHint: 'Esplora la mappa e aggiungi i tuoi paesi preferiti!', remove: 'Rimuovi' },
+  en: { title: 'Your favorites', empty: 'No favorite countries yet', emptyHint: 'Explore the map and add your favorite countries!', remove: 'Remove' },
+  fr: { title: 'Vos favoris', empty: 'Aucun pays favori', emptyHint: 'Explorez la carte et ajoutez vos pays favoris !', remove: 'Supprimer' },
+  es: { title: 'Tus favoritos', empty: 'Sin países favoritos', emptyHint: 'Explora el mapa y agrega tus países favoritos!', remove: 'Eliminar' },
+  de: { title: 'Deine Favoriten', empty: 'Keine Lieblingsländer', emptyHint: 'Erkunde die Karte und füge deine Lieblingsländer hinzu!', remove: 'Entfernen' },
 };
 
 export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language, onCountryClick }) => {
@@ -41,11 +41,14 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
 
   if (loading) {
     return (
-      <div className="p-4">
-        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">{t.title}</h3>
+      <div className="max-w-2xl mx-auto p-6">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Heart size={18} className="text-red-400" />
+          {t.title}
+        </h3>
         <div className="space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-10 bg-slate-800/50 rounded-lg animate-pulse" />
+            <div key={i} className="h-14 bg-slate-800/50 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -53,13 +56,19 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   }
 
   return (
-    <div className="p-4">
-      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <Heart size={14} className="text-red-400" />
+    <div className="max-w-2xl mx-auto p-6">
+      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <Heart size={18} className="text-red-400" />
         {t.title}
       </h3>
       {favorites.length === 0 ? (
-        <p className="text-xs text-slate-600 italic">{t.empty}</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="p-4 bg-slate-800/50 rounded-full mb-4">
+            <Heart size={32} className="text-slate-600" />
+          </div>
+          <p className="text-sm text-slate-400 font-medium">{t.empty}</p>
+          <p className="text-xs text-slate-600 mt-1">{t.emptyHint}</p>
+        </div>
       ) : (
         <div className="space-y-1">
           {favorites.map(fav => (
@@ -69,17 +78,17 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
             >
               <button
                 onClick={() => onCountryClick(fav.country_name)}
-                className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors text-left"
+                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/50 transition-colors text-left"
               >
-                <span className="text-base leading-none">{getFlagEmoji(fav.country_code)}</span>
-                <span className="text-sm text-slate-300 truncate">{fav.country_name}</span>
+                <span className="text-xl leading-none">{getFlagEmoji(fav.country_code)}</span>
+                <span className="text-sm font-medium text-slate-200 truncate">{fav.country_name}</span>
               </button>
               <button
                 onClick={() => handleRemove(fav.country_code)}
                 title={t.remove}
-                className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-slate-800/50 transition-colors opacity-0 group-hover:opacity-100"
+                className="p-2 rounded-lg text-slate-600 hover:text-red-400 hover:bg-slate-800/50 transition-colors opacity-0 group-hover:opacity-100"
               >
-                <Heart size={12} fill="currentColor" />
+                <Heart size={14} fill="currentColor" />
               </button>
             </div>
           ))}

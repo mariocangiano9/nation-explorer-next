@@ -25,6 +25,7 @@ interface CountryProfileProps {
   error: string | null;
   onClose: () => void;
   onCountryClick?: (name: string) => void;
+  onShowAuth?: () => void;
   language: 'it' | 'en' | 'fr' | 'es' | 'de';
 }
 
@@ -153,6 +154,8 @@ const translations = {
     refreshSuccess: "Dati aggiornati!",
     addFavorite: "Aggiungi ai preferiti",
     removeFavorite: "Rimuovi dai preferiti",
+    favLoginPrompt: "Accedi per salvare i tuoi paesi preferiti e sbloccare funzionalità esclusive come il confronto tra paesi, lo storico visite e gli aggiornamenti personalizzati.",
+    favSignIn: "Accedi",
     definitions: {
       democracy: "Misura lo stato della democrazia basandosi su processo elettorale, libertà civili e partecipazione politica.",
       press: "Valuta il grado di libertà di cui godono giornalisti e media, e gli sforzi delle autorità per rispettarla.",
@@ -331,6 +334,8 @@ const translations = {
     refreshSuccess: "Data updated!",
     addFavorite: "Add to favorites",
     removeFavorite: "Remove from favorites",
+    favLoginPrompt: "Sign in to save your favorite countries and unlock exclusive features like country comparison, visit history, and personalized updates.",
+    favSignIn: "Sign In",
     definitions: {
       democracy: "Measures the state of democracy based on electoral process, civil liberties, and political participation.",
       press: "Assesses the degree of freedom enjoyed by journalists and media, and the efforts of authorities to respect it.",
@@ -451,6 +456,8 @@ const translations = {
     refreshSuccess: "Données actualisées !",
     addFavorite: "Ajouter aux favoris",
     removeFavorite: "Retirer des favoris",
+    favLoginPrompt: "Connectez-vous pour sauvegarder vos pays favoris et débloquer des fonctionnalités exclusives comme la comparaison de pays, l'historique des visites et les mises à jour personnalisées.",
+    favSignIn: "Se connecter",
     definitions: {
       democracy: "Mesure l'état de la démocratie en fonction du processus électoral, des libertés civiles et de la participation politique.",
       press: "Évalue le degré de liberté dont jouissent les journalistes et les médias.",
@@ -571,6 +578,8 @@ const translations = {
     refreshSuccess: "Datos actualizados!",
     addFavorite: "Agregar a favoritos",
     removeFavorite: "Quitar de favoritos",
+    favLoginPrompt: "Inicia sesión para guardar tus países favoritos y desbloquear funciones exclusivas como la comparación de países, el historial de visitas y las actualizaciones personalizadas.",
+    favSignIn: "Iniciar sesión",
     definitions: {
       democracy: "Mide el estado de la democracia en función del proceso electoral, las libertades civiles y la participación política.",
       press: "Evalúa el grado de libertad del que gozan periodistas y medios de comunicación.",
@@ -691,6 +700,8 @@ const translations = {
     refreshSuccess: "Daten aktualisiert!",
     addFavorite: "Zu Favoriten hinzufügen",
     removeFavorite: "Aus Favoriten entfernen",
+    favLoginPrompt: "Melde dich an, um deine Lieblingsländer zu speichern und exklusive Funktionen wie den Ländervergleich, den Besuchsverlauf und personalisierte Updates freizuschalten.",
+    favSignIn: "Anmelden",
     definitions: {
       democracy: "Misst den Zustand der Demokratie anhand von Wahlprozess, bürgerlichen Freiheiten und politischer Teilhabe.",
       press: "Bewertet den Grad der Freiheit, den Journalisten und Medien genießen.",
@@ -832,7 +843,7 @@ const Skeleton = ({ className }: { className?: string }) => (
   <div className={cn("animate-pulse bg-slate-800 rounded-lg", className)} />
 );
 
-export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data: initialData, loading, error, onClose, onCountryClick, language }) => {
+export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ countryName, data: initialData, loading, error, onClose, onCountryClick, onShowAuth, language }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [leaderImages, setLeaderImages] = useState<{ [key: string]: string }>({});
   const [loadingImages, setLoadingImages] = useState<{ [key: string]: boolean }>({});
@@ -840,6 +851,8 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
   const [refreshing, setRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [showFavLoginPrompt, setShowFavLoginPrompt] = useState(false);
+  const [heartAnimating, setHeartAnimating] = useState(false);
 
   const data = refreshedData || initialData;
 
@@ -869,20 +882,26 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
   }, [countryName, language, isRecentlyRefreshed]);
 
   useEffect(() => {
-    if (!user || !countryName) return;
+    if (!user || !data?.code) return;
     let cancelled = false;
-    isFavorite(user.id, countryName).then(val => { if (!cancelled) setFavorited(val); }).catch(() => {});
+    isFavorite(user.id, data.code).then(val => { if (!cancelled) setFavorited(val); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [user, countryName]);
+  }, [user, data?.code]);
 
   const handleToggleFavorite = useCallback(async () => {
-    if (!user || !data) return;
+    if (!data) return;
+    if (!user) {
+      setShowFavLoginPrompt(true);
+      return;
+    }
+    setHeartAnimating(true);
+    setTimeout(() => setHeartAnimating(false), 300);
     try {
       if (favorited) {
-        await removeFavorite(user.id, countryName);
+        await removeFavorite(user.id, data.code);
         setFavorited(false);
       } else {
-        await addFavorite(user.id, countryName, data.name || countryName);
+        await addFavorite(user.id, data.code, data.name || countryName);
         setFavorited(true);
       }
     } catch {}
@@ -989,6 +1008,21 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                       <h2 className="text-base md:text-xl font-bold text-white leading-none">{data.name}</h2>
                       <p className="text-slate-400 text-xs mt-1 uppercase tracking-widest">{data.region}</p>
                     </div>
+                    <button
+                      onClick={handleToggleFavorite}
+                      title={favorited ? t.removeFavorite : t.addFavorite}
+                      className="p-2 rounded-lg transition-all hover:bg-slate-800/50"
+                    >
+                      <Heart
+                        size={20}
+                        fill={favorited ? 'red' : 'none'}
+                        className={cn(
+                          'transition-all duration-200',
+                          favorited ? 'text-red-500' : 'text-slate-400 hover:text-red-400',
+                          heartAnimating && 'scale-125'
+                        )}
+                      />
+                    </button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
@@ -1015,13 +1049,6 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
                           {t.lastUpdated}: {new Date(data.lastUpdated).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       )}
-                      <button
-                        onClick={handleToggleFavorite}
-                        title={favorited ? t.removeFavorite : t.addFavorite}
-                        className="p-2 rounded-lg transition-all hover:bg-slate-800"
-                      >
-                        <Heart size={16} className={favorited ? 'text-red-400 fill-red-400' : 'text-slate-400 hover:text-red-400'} />
-                      </button>
                       <button
                         onClick={handleRefresh}
                         disabled={refreshing || !canRefresh()}
@@ -2164,6 +2191,55 @@ export const CountryProfile: React.FC<CountryProfileProps> = React.memo(({ count
               </div>
             </div>
           )}
+
+      {/* Favorite Login Prompt Modal */}
+      <AnimatePresence>
+        {showFavLoginPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowFavLoginPrompt(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-sm w-full p-6"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-red-500/10 rounded-full">
+                  <Heart size={28} className="text-red-400" />
+                </div>
+              </div>
+              <p className="text-sm text-slate-300 text-center leading-relaxed mb-6">
+                {t.favLoginPrompt}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFavLoginPrompt(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm font-medium hover:bg-slate-800 transition-colors"
+                >
+                  <X size={14} className="inline mr-1" />
+                  {language === 'it' ? 'Chiudi' : language === 'fr' ? 'Fermer' : language === 'es' ? 'Cerrar' : language === 'de' ? 'Schließen' : 'Close'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowFavLoginPrompt(false);
+                    if (onShowAuth) onShowAuth();
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+                >
+                  {t.favSignIn}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 });

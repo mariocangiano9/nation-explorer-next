@@ -441,6 +441,7 @@ export default function Page() {
                   error={error}
                   onClose={closeProfile}
                   onCountryClick={handleCountryClickWithLimit}
+                  onShowAuth={() => setShowAuthModal(true)}
                   language={language}
                 />
               </Suspense>
