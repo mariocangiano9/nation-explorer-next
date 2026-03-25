@@ -9,13 +9,44 @@ export interface RankingItem {
 }
 
 /**
- * Parse a monetary string like "$2.1T", "$450B", "$32.7B", "€450B" into a
- * numeric value in billions.
+ * Generic numeric parser that handles commas as decimal separators,
+ * extracts the first number from a string, and applies multipliers
+ * for "miliardi"/"billion" and "trilioni"/"trillion".
+ */
+function parseNumericValue(raw: string): number {
+  if (!raw) return NaN;
+  // Replace comma with dot for decimal separator
+  const normalized = raw.replace(',', '.');
+  // Extract the first number found in the string
+  const match = normalized.match(/[\d]+\.?[\d]*/);
+  if (!match) return NaN;
+  let num = parseFloat(match[0]);
+  if (isNaN(num)) return NaN;
+  const lower = raw.toLowerCase();
+  if (lower.includes('trilioni') || lower.includes('trillion')) {
+    num *= 1000000;
+  } else if (lower.includes('miliardi') || lower.includes('billion')) {
+    num *= 1000;
+  }
+  return num;
+}
+
+/**
+ * Parse a monetary string like "$2.1T", "$450B", "$32.7B", "€450B",
+ * or "circa 14,8 miliardi di USD" into a numeric value in billions.
  */
 function parseMonetary(raw: string): number {
   if (!raw) return NaN;
-  const cleaned = raw.replace(/[^0-9.,TBMtbm]/g, '');
-  const num = parseFloat(cleaned.replace(/,/g, ''));
+  const lower = raw.toLowerCase();
+  // If it contains word-based multipliers, use the generic parser
+  if (lower.includes('miliardi') || lower.includes('billion') || lower.includes('trilioni') || lower.includes('trillion')) {
+    return parseNumericValue(raw);
+  }
+  // Otherwise handle compact suffixes like T, B, M
+  const normalized = raw.replace(',', '.');
+  const match = normalized.match(/[\d]+\.?[\d]*/);
+  if (!match) return NaN;
+  const num = parseFloat(match[0]);
   if (isNaN(num)) return NaN;
   const upper = raw.toUpperCase();
   if (upper.includes('T')) return num * 1000;
@@ -25,19 +56,25 @@ function parseMonetary(raw: string): number {
 }
 
 /**
- * Parse a percentage string like "5.8%", "134.8%" into a number.
+ * Parse a percentage string like "5.8%", "134.8%", "circa 28,0%" into a number.
  */
 function parsePercentage(raw: string): number {
   if (!raw) return NaN;
-  return parseFloat(raw.replace(/[^0-9.\-]/g, ''));
+  const normalized = raw.replace(',', '.');
+  const match = normalized.match(/[\d]+\.?[\d]*/);
+  if (!match) return NaN;
+  return parseFloat(match[0]);
 }
 
 /**
- * Parse a per-capita string like "$45,230" into a number.
+ * Parse a per-capita string like "$45,230" or "circa 12.500" into a number.
  */
 function parsePerCapita(raw: string): number {
   if (!raw) return NaN;
-  return parseFloat(raw.replace(/[^0-9.\-]/g, ''));
+  const normalized = raw.replace(',', '.');
+  const match = normalized.match(/[\d]+\.?[\d]*/);
+  if (!match) return NaN;
+  return parseFloat(match[0]);
 }
 
 /**
