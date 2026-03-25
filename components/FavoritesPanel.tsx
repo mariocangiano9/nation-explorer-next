@@ -73,7 +73,7 @@ const translations = {
 export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language, onCountryClick, onExplore }) => {
   const [favorites, setFavorites] = useState<{ country_code: string; country_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState<{ countryCode: string; countryName: string; visitedAt: number }[]>([]);
+  const [history, setHistory] = useState<{ country_code: string; country_name: string; visitedAt: number }[]>([]);
   const [pdfHistory, setPdfHistory] = useState<{ countryCode: string; countryName: string; downloadedAt: number }[]>([]);
   const t = translations[language];
 
@@ -90,13 +90,14 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   useEffect(() => {
     let cancelled = false;
     // Clear stale localStorage data and reload from Supabase
+    localStorage.removeItem('ne_visit_history');
     clearHistory();
     getHistorySupabase(userId)
       .then(rows => {
         if (cancelled) return;
         setHistory(rows.map(r => ({
-          countryCode: r.country_code,
-          countryName: r.country_name,
+          country_code: r.country_code,
+          country_name: r.country_name,
           visitedAt: new Date(r.visited_at).getTime(),
         })).slice(0, 8));
       })
@@ -168,12 +169,12 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {history.map(entry => (
             <button
-              key={entry.countryCode + entry.visitedAt}
-              onClick={() => onCountryClick(entry.countryName)}
+              key={entry.country_code + entry.visitedAt}
+              onClick={() => onCountryClick(entry.country_name)}
               className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
             >
-              <span className="text-4xl leading-none mt-1">{getFlagEmoji(entry.countryCode)}</span>
-              <span className="text-sm font-bold text-white text-center truncate w-full">{entry.countryName}</span>
+              <span className="text-4xl leading-none mt-1">{getFlagEmoji(entry.country_code)}</span>
+              <span className="text-sm font-bold text-white text-center truncate w-full">{entry.country_name}</span>
               <span className="text-[10px] text-slate-500">{new Date(entry.visitedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
             </button>
           ))}
