@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Compass } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../services/favoritesService';
 import { getFlagEmoji } from '../utils';
 
@@ -7,17 +7,53 @@ interface FavoritesPanelProps {
   userId: string;
   language: 'it' | 'en' | 'fr' | 'es' | 'de';
   onCountryClick: (name: string) => void;
+  onExplore?: () => void;
 }
 
 const translations = {
-  it: { title: 'I tuoi preferiti', empty: 'Nessun paese nei preferiti', emptyHint: 'Esplora la mappa e aggiungi i tuoi paesi preferiti!', remove: 'Rimuovi' },
-  en: { title: 'Your favorites', empty: 'No favorite countries yet', emptyHint: 'Explore the map and add your favorite countries!', remove: 'Remove' },
-  fr: { title: 'Vos favoris', empty: 'Aucun pays favori', emptyHint: 'Explorez la carte et ajoutez vos pays favoris !', remove: 'Supprimer' },
-  es: { title: 'Tus favoritos', empty: 'Sin países favoritos', emptyHint: 'Explora el mapa y agrega tus países favoritos!', remove: 'Eliminar' },
-  de: { title: 'Deine Favoriten', empty: 'Keine Lieblingsländer', emptyHint: 'Erkunde die Karte und füge deine Lieblingsländer hinzu!', remove: 'Entfernen' },
+  it: {
+    title: 'I tuoi preferiti',
+    subtitle: (n: number) => n === 1 ? '1 paese salvato' : `${n} paesi salvati`,
+    empty: 'Nessun preferito ancora',
+    emptyHint: 'Esplora la mappa e tocca il cuore per salvare i tuoi paesi preferiti.',
+    explore: 'Esplora la Mappa',
+    remove: 'Rimuovi dai preferiti',
+  },
+  en: {
+    title: 'Your favorites',
+    subtitle: (n: number) => n === 1 ? '1 country saved' : `${n} countries saved`,
+    empty: 'No favorites yet',
+    emptyHint: 'Explore the map and tap the heart to save your favorite countries.',
+    explore: 'Explore the Map',
+    remove: 'Remove from favorites',
+  },
+  fr: {
+    title: 'Vos favoris',
+    subtitle: (n: number) => n === 1 ? '1 pays sauvegardé' : `${n} pays sauvegardés`,
+    empty: 'Aucun favori pour le moment',
+    emptyHint: 'Explorez la carte et appuyez sur le coeur pour sauvegarder vos pays favoris.',
+    explore: 'Explorer la Carte',
+    remove: 'Retirer des favoris',
+  },
+  es: {
+    title: 'Tus favoritos',
+    subtitle: (n: number) => n === 1 ? '1 país guardado' : `${n} países guardados`,
+    empty: 'Sin favoritos aún',
+    emptyHint: 'Explora el mapa y toca el corazón para guardar tus países favoritos.',
+    explore: 'Explorar el Mapa',
+    remove: 'Quitar de favoritos',
+  },
+  de: {
+    title: 'Deine Favoriten',
+    subtitle: (n: number) => n === 1 ? '1 Land gespeichert' : `${n} Länder gespeichert`,
+    empty: 'Noch keine Favoriten',
+    emptyHint: 'Erkunde die Karte und tippe auf das Herz, um deine Lieblingsländer zu speichern.',
+    explore: 'Karte erkunden',
+    remove: 'Aus Favoriten entfernen',
+  },
 };
 
-export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language, onCountryClick }) => {
+export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language, onCountryClick, onExplore }) => {
   const [favorites, setFavorites] = useState<{ country_code: string; country_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const t = translations[language];
@@ -32,68 +68,89 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
     return () => { cancelled = true; };
   }, [userId]);
 
-  const handleRemove = async (countryCode: string) => {
+  const handleRemove = async (e: React.MouseEvent, countryCode: string) => {
+    e.stopPropagation();
     try {
       await removeFavorite(userId, countryCode);
       setFavorites(prev => prev.filter(f => f.country_code !== countryCode));
     } catch {}
   };
 
+  const Header = ({ count }: { count?: number }) => (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="p-2 bg-red-500/10 rounded-xl">
+          <Heart size={20} className="text-red-400" fill="currentColor" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">{t.title}</h2>
+          {count !== undefined && (
+            <p className="text-xs text-slate-500 mt-0.5">{t.subtitle(count)}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Heart size={18} className="text-red-400" />
-          {t.title}
-        </h3>
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-14 bg-slate-800/50 rounded-xl animate-pulse" />
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
+        <Header />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-slate-800/50 rounded-2xl h-36 animate-pulse" />
           ))}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-        <Heart size={18} className="text-red-400" />
-        {t.title}
-      </h3>
-      {favorites.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="p-4 bg-slate-800/50 rounded-full mb-4">
-            <Heart size={32} className="text-slate-600" />
+  if (favorites.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
+        <Header count={0} />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="p-5 bg-slate-800/50 rounded-full mb-5">
+            <Heart size={40} className="text-slate-700" />
           </div>
-          <p className="text-sm text-slate-400 font-medium">{t.empty}</p>
-          <p className="text-xs text-slate-600 mt-1">{t.emptyHint}</p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {favorites.map(fav => (
-            <div
-              key={fav.country_code}
-              className="flex items-center gap-2 group"
+          <p className="text-base font-semibold text-slate-400 mb-1">{t.empty}</p>
+          <p className="text-sm text-slate-600 max-w-xs mb-6">{t.emptyHint}</p>
+          {onExplore && (
+            <button
+              onClick={onExplore}
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition-colors"
             >
-              <button
-                onClick={() => onCountryClick(fav.country_name)}
-                className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/50 transition-colors text-left"
-              >
-                <span className="text-xl leading-none">{getFlagEmoji(fav.country_code)}</span>
-                <span className="text-sm font-medium text-slate-200 truncate">{fav.country_name}</span>
-              </button>
-              <button
-                onClick={() => handleRemove(fav.country_code)}
-                title={t.remove}
-                className="p-2 rounded-lg text-slate-600 hover:text-red-400 hover:bg-slate-800/50 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Heart size={14} fill="currentColor" />
-              </button>
-            </div>
-          ))}
+              <Compass size={16} />
+              {t.explore}
+            </button>
+          )}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-4 md:p-8">
+      <Header count={favorites.length} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        {favorites.map(fav => (
+          <button
+            key={fav.country_code}
+            onClick={() => onCountryClick(fav.country_name)}
+            className="relative bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center gap-3 cursor-pointer hover:border-blue-500/30 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200 group text-left"
+          >
+            <button
+              onClick={(e) => handleRemove(e, fav.country_code)}
+              title={t.remove}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+            >
+              <Heart size={14} fill="currentColor" />
+            </button>
+            <span className="text-4xl leading-none mt-1">{getFlagEmoji(fav.country_code)}</span>
+            <span className="text-sm font-bold text-white text-center truncate w-full">{fav.country_name}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

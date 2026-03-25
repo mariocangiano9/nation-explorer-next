@@ -208,13 +208,11 @@ export default function Page() {
             active={view === 'ranking'}
             onClick={() => setView('ranking')}
           />
-          {user && (
-            <NavIcon
-              icon={Heart}
-              active={view === 'favorites'}
-              onClick={() => setView('favorites')}
-            />
-          )}
+          <NavIcon
+            icon={Heart}
+            active={view === 'favorites'}
+            onClick={() => user ? setView('favorites') : setShowAuthModal(true)}
+          />
         </nav>
       </aside>
 
@@ -401,7 +399,7 @@ export default function Page() {
                 exit={{ opacity: 0, y: -20 }}
                 className="w-full h-full p-3 md:p-6 overflow-y-auto"
               >
-                <FavoritesPanel userId={user.id} language={language} onCountryClick={handleCountryClickWithLimit} />
+                <FavoritesPanel userId={user.id} language={language} onCountryClick={handleCountryClickWithLimit} onExplore={() => setView('map')} />
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -522,13 +520,11 @@ export default function Page() {
           active={view === 'ranking'}
           onClick={() => setView('ranking')}
         />
-        {user && (
-          <NavIcon
-            icon={Heart}
-            active={view === 'favorites'}
-            onClick={() => setView('favorites')}
-          />
-        )}
+        <NavIcon
+          icon={Heart}
+          active={view === 'favorites'}
+          onClick={() => user ? setView('favorites') : setShowAuthModal(true)}
+        />
       </div>
     </div>
   );
