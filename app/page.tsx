@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuthModal } from '../components/AuthModal';
 import { useCountryData } from '../hooks/useCountryData';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Globe2, Compass, Trophy, Home, User, LogOut, LogIn, Heart } from 'lucide-react';
+import { Search, Globe2, Compass, Trophy, ChevronDown, Home, User, LogOut, LogIn, Heart } from 'lucide-react';
 import { FavoritesPanel } from '../components/FavoritesPanel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, getFlagEmoji } from '../utils';
@@ -78,6 +78,10 @@ export default function Page() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [showUserPanel, setShowUserPanel] = useState(false);
   const userPanelRef = useRef<HTMLDivElement>(null);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const langButtonRef = useRef<HTMLButtonElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
 
@@ -143,6 +147,28 @@ export default function Page() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        langMenuRef.current && !langMenuRef.current.contains(target) &&
+        langDropdownRef.current && !langDropdownRef.current.contains(target)
+      ) {
+        setShowLangMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowLangMenu(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   const handleCountryClickWithLimit = (name: string) => {
@@ -215,9 +241,15 @@ export default function Page() {
         <div className="mt-auto">
           <button
             onClick={() => setShowUserPanel(v => !v)}
-            className="relative w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-600 transition-all"
+            className="relative w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:border-slate-600 transition-all"
           >
-            <User size={18} />
+            {user ? (
+              <span className="text-sm font-bold text-white uppercase">
+                {user.email?.[0] || 'U'}
+              </span>
+            ) : (
+              <User size={18} className="text-slate-400" />
+            )}
             {user && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-slate-900" />}
           </button>
         </div>
@@ -289,15 +321,37 @@ export default function Page() {
                 )}
               </AnimatePresence>
             </div>
+            <div className="shrink-0" ref={langMenuRef}>
+              <button
+                ref={langButtonRef}
+                onClick={() => setShowLangMenu(v => !v)}
+                className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 hover:border-slate-700 transition-all text-sm font-bold uppercase tracking-wider"
+              >
+                <span className="text-base leading-none">
+                  {{ en: '🇬🇧', it: '🇮🇹', fr: '🇫🇷', es: '🇪🇸', de: '🇩🇪' }[language]}
+                </span>
+                <span className="text-xs">{{ en: 'EN', it: 'IT', fr: 'FR', es: 'ES', de: 'DE' }[language]}</span>
+                <ChevronDown
+                  size={14}
+                  className={cn("text-slate-400 transition-transform duration-200", showLangMenu && "rotate-180")}
+                />
+              </button>
+            </div>
           </div>
 
           {/* User menu */}
           <div className="relative shrink-0" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(v => !v)}
-              className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all"
+              className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:border-slate-600 transition-all"
             >
-              <User size={17} />
+              {user ? (
+                <span className="text-sm font-bold text-white uppercase">
+                  {user.email?.[0] || 'U'}
+                </span>
+              ) : (
+                <User size={17} className="text-slate-400" />
+              )}
             </button>
 
             <AnimatePresence>
@@ -447,6 +501,50 @@ export default function Page() {
             onClose={handleCloseModal}
             onSuccess={handleAuthSuccess}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Language Dropdown (fixed, outside header to avoid clipping) */}
+      <AnimatePresence>
+        {showLangMenu && (
+          <motion.div
+            ref={langDropdownRef}
+            initial={{ opacity: 0, scale: 0.95, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -6 }}
+            transition={{ duration: 0.1 }}
+            className="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden"
+            style={{
+              position: 'fixed',
+              top: '5rem',
+              right: langButtonRef.current
+                ? window.innerWidth - langButtonRef.current.getBoundingClientRect().right
+                : 60,
+              zIndex: 200,
+            }}
+          >
+            {([
+              { code: 'en', flag: '🇬🇧', label: 'EN' },
+              { code: 'it', flag: '🇮🇹', label: 'IT' },
+              { code: 'fr', flag: '🇫🇷', label: 'FR' },
+              { code: 'es', flag: '🇪🇸', label: 'ES' },
+              { code: 'de', flag: '🇩🇪', label: 'DE' },
+            ] as const).map(({ code, flag, label }) => (
+              <button
+                key={code}
+                onClick={() => { handleLanguageChange(code); setShowLangMenu(false); }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors",
+                  language === code
+                    ? "text-blue-400 bg-slate-800"
+                    : "text-slate-200 hover:bg-white/5"
+                )}
+              >
+                <span className="text-base leading-none">{flag}</span>
+                {label}
+              </button>
+            ))}
+          </motion.div>
         )}
       </AnimatePresence>
 
