@@ -88,7 +88,14 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   }, [userId]);
 
   useEffect(() => {
-    setHistory(getHistory().slice(0, 8));
+    // Clear stale history that stored full names instead of ISO codes
+    const existing = getHistory();
+    if (existing.length > 0 && existing[0].countryCode.length > 2) {
+      clearHistory();
+      setHistory([]);
+    } else {
+      setHistory(existing.slice(0, 8));
+    }
     setPdfHistory(getPdfHistory().slice(0, 5));
   }, []);
 

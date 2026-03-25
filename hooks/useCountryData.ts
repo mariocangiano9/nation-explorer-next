@@ -48,7 +48,8 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
       });
     }
 
-    addToHistory(name, name);
+    const matchedCountry = getStaticCountries().find(c => c.name === name);
+    addToHistory(matchedCountry?.code || name, name);
 
     const cached = checkCountryCache(name, lang) as (CountryData & { lastUpdated: string }) | null;
     if (cached) {
