@@ -3,9 +3,9 @@ import { CountryData, BaseCountry } from '../types';
 import { getCountryData, checkCountryCache } from '../services/claudeDataService';
 import { fetchCountries, getCachedCountries, getStaticCountries } from '../services/countriesService';
 import { countryNames } from '../store/countryNames';
-import { addToHistory } from '../services/historyService';
+import { addToHistory, addToHistorySupabase } from '../services/historyService';
 
-export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
+export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de', userId?: string | null) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [countryData, setCountryData] = useState<(CountryData & { lastUpdated: string }) | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,11 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de') {
     }
 
     const matchedCountry = getStaticCountries().find(c => c.name === name);
-    addToHistory(matchedCountry?.code || name, name);
+    const code = matchedCountry?.code || name;
+    addToHistory(code, name);
+    if (userId) {
+      addToHistorySupabase(userId, code, name).catch(() => {});
+    }
 
     const cached = checkCountryCache(name, lang) as (CountryData & { lastUpdated: string }) | null;
     if (cached) {

@@ -100,7 +100,7 @@ export default function Page() {
     filteredCountries,
     handleCountryClick,
     closeProfile,
-  } = useCountryData(language);
+  } = useCountryData(language, user?.id);
 
   const handleCountryClickRef = useRef(handleCountryClick);
   handleCountryClickRef.current = handleCountryClick;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Compass, Clock, FileDown } from 'lucide-react';
 import { getFavorites, removeFavorite } from '../services/favoritesService';
-import { getHistory, clearHistory } from '../services/historyService';
+import { getHistory, clearHistory, getHistorySupabase } from '../services/historyService';
 import { getPdfHistory, clearPdfHistory } from '../services/pdfHistoryService';
 import { getFlagEmoji } from '../utils';
 
@@ -88,16 +88,31 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
   }, [userId]);
 
   useEffect(() => {
-    // Clear stale history that stored full names instead of ISO codes
-    const existing = getHistory();
-    if (existing.length > 0 && existing[0].countryCode.length > 2) {
-      clearHistory();
-      setHistory([]);
-    } else {
-      setHistory(existing.slice(0, 8));
-    }
+    let cancelled = false;
+    // Load from Supabase for logged-in users, localStorage for guests
+    getHistorySupabase(userId)
+      .then(rows => {
+        if (cancelled) return;
+        setHistory(rows.map(r => ({
+          countryCode: r.country_code,
+          countryName: r.country_name,
+          visitedAt: new Date(r.visited_at).getTime(),
+        })).slice(0, 8));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fallback to localStorage
+        const existing = getHistory();
+        if (existing.length > 0 && existing[0].countryCode.length > 2) {
+          clearHistory();
+          setHistory([]);
+        } else {
+          setHistory(existing.slice(0, 8));
+        }
+      });
     setPdfHistory(getPdfHistory().slice(0, 5));
-  }, []);
+    return () => { cancelled = true; };
+  }, [userId]);
 
   const handleRemove = async (e: React.MouseEvent, countryCode: string) => {
     e.stopPropagation();
