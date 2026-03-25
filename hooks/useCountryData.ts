@@ -48,11 +48,16 @@ export function useCountryData(language: 'it' | 'en' | 'fr' | 'es' | 'de', userI
       });
     }
 
-    const matchedCountry = getStaticCountries().find(c => c.name === name);
+    const matchedCountry = getStaticCountries().find(c =>
+      c.name === name ||
+      name.includes(c.name) ||
+      c.name.includes(name)
+    );
     const code = matchedCountry?.code || name;
-    addToHistory(code, name);
+    const englishName = matchedCountry?.name || name;
+    addToHistory(code, englishName);
     if (userId) {
-      addToHistorySupabase(userId, code, name).catch(() => {});
+      addToHistorySupabase(userId, code, englishName).catch(() => {});
     }
 
     const cached = checkCountryCache(name, lang) as (CountryData & { lastUpdated: string }) | null;

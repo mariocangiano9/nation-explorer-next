@@ -89,7 +89,8 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
 
   useEffect(() => {
     let cancelled = false;
-    // Load from Supabase for logged-in users, localStorage for guests
+    // Clear stale localStorage data and reload from Supabase
+    clearHistory();
     getHistorySupabase(userId)
       .then(rows => {
         if (cancelled) return;
@@ -101,14 +102,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({ userId, language
       })
       .catch(() => {
         if (cancelled) return;
-        // Fallback to localStorage
-        const existing = getHistory();
-        if (existing.length > 0 && existing[0].countryCode.length > 2) {
-          clearHistory();
-          setHistory([]);
-        } else {
-          setHistory(existing.slice(0, 8));
-        }
+        setHistory([]);
       });
     setPdfHistory(getPdfHistory().slice(0, 5));
     return () => { cancelled = true; };

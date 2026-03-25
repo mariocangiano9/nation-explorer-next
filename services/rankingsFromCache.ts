@@ -40,6 +40,18 @@ function parsePerCapita(raw: string): number {
   return parseFloat(raw.replace(/[^0-9.\-]/g, ''));
 }
 
+/**
+ * Check if a string value is mostly non-numeric (>50% non-digit characters
+ * after removing currency symbols and known prefixes).
+ */
+function isMostlyNonNumeric(raw: string): boolean {
+  // Strip known prefixes/noise
+  const stripped = raw.replace(/[$€£¥₹%,.\s\-+~]/g, '').replace(/circa|approx|est\.?|about|ca\.?/gi, '');
+  if (stripped.length === 0) return true;
+  const digitCount = (stripped.match(/[0-9]/g) || []).length;
+  return digitCount / stripped.length < 0.5;
+}
+
 interface IndicatorConfig {
   extract: (data: any) => string | undefined;
   parse: (value: string, data: any) => number;
@@ -138,22 +150,36 @@ export async function getRankingFromCountryCache(
 
   const { data: rows, error } = await supabase
     .from('country_cache')
-    .select('data')
+    .select('data, updated_at')
     .eq('language', language);
 
   if (error || !rows) return [];
 
-  const items: RankingItem[] = [];
-
+  // Deduplicate by country code — keep most recently updated entry
+  const seen = new Map<string, { data: any; updated_at: string }>();
   for (const row of rows) {
     const d = row.data as any;
-    if (!d) continue;
+    if (!d?.code) continue;
+    const code = d.code as string;
+    const existing = seen.get(code);
+    if (!existing || row.updated_at > existing.updated_at) {
+      seen.set(code, { data: d, updated_at: row.updated_at });
+    }
+  }
 
+  const items: RankingItem[] = [];
+
+  for (const { data: d } of seen.values()) {
     const rawValue = config.extract(d);
     if (rawValue == null) continue;
 
+    // Skip entries with mostly non-numeric text (malformed data)
+    if (typeof rawValue === 'string' && isMostlyNonNumeric(rawValue)) continue;
+
     const numericValue = config.parse(rawValue, d);
-    if (!numericValue || isNaN(numericValue)) continue;
+
+    // Skip zero, NaN, or invalid values
+    if (isNaN(numericValue) || numericValue === 0) continue;
 
     items.push({
       name: d.name ?? '',

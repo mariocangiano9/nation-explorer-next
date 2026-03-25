@@ -24,7 +24,8 @@ export function getHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as HistoryEntry[];
+    const entries = JSON.parse(raw) as HistoryEntry[];
+    return entries.filter(e => e.countryCode.length <= 3);
   } catch {
     return [];
   }
